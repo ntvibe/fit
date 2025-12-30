@@ -147,6 +147,34 @@ body {
   gap: 12px;
 }
 
+.order-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 16px;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.icon-button:active {
+  transform: scale(0.96);
+}
+
+.icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .link {
   text-decoration: none;
   color: inherit;
@@ -162,6 +190,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.next-card h3 {
+  margin: 6px 0;
 }
 
 .player {

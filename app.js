@@ -7,6 +7,8 @@ import {
   addLogEntry,
   completeSession,
   updateSession,
+  loadPlanOrder,
+  savePlanOrder,
 } from "./store.js";
 import { createRunnerEngine } from "./runnerEngine.js";
 import {
@@ -49,10 +51,45 @@ function startRunnerSession(day) {
 async function init() {
   try {
     state.plan = await loadPlan();
+    applyPlanOrder(state.plan);
   } catch (error) {
     state.error = "Unable to load workout plan. Please verify /data/week1.json.";
   }
   render();
+}
+
+function applyPlanOrder(plan) {
+  const orderData = loadPlanOrder(plan.id);
+  plan.days.forEach((day) => {
+    const order = orderData[day.id];
+    if (!Array.isArray(order) || order.length === 0) return;
+    day.items = reorderItems(day.items, order);
+  });
+}
+
+function reorderItems(items, order) {
+  const buckets = new Map();
+  items.forEach((item) => {
+    const key = item.exerciseId;
+    if (!buckets.has(key)) {
+      buckets.set(key, []);
+    }
+    buckets.get(key).push(item);
+  });
+  const ordered = [];
+  order.forEach((exerciseId) => {
+    const bucket = buckets.get(exerciseId);
+    if (bucket && bucket.length) {
+      ordered.push(bucket.shift());
+    }
+  });
+  items.forEach((item) => {
+    const bucket = buckets.get(item.exerciseId);
+    if (bucket && bucket.length && bucket[0] === item) {
+      ordered.push(bucket.shift());
+    }
+  });
+  return ordered;
 }
 
 function render() {
@@ -106,6 +143,19 @@ function render() {
         }
         startRunnerSession(day);
         window.location.hash = `#/run/${day.id}`;
+      },
+      onReorder: (fromIndex, direction) => {
+        const toIndex = fromIndex + direction;
+        if (toIndex < 0 || toIndex >= day.items.length) return;
+        const updated = [...day.items];
+        [updated[fromIndex], updated[toIndex]] = [updated[toIndex], updated[fromIndex]];
+        day.items = updated;
+        savePlanOrder(
+          state.plan.id,
+          day.id,
+          day.items.map((item) => item.exerciseId),
+        );
+        render();
       },
     });
     return;

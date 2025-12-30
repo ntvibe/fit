@@ -1,4 +1,5 @@
 const STORAGE_KEY = "fitness_mvp_progress_v1";
+const PLAN_ORDER_KEY = "fitness_mvp_plan_order_v1";
 
 export function loadProgress() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -67,4 +68,33 @@ export function completeSession(progress, sessionId) {
     sessionId,
   };
   saveProgress(progress);
+}
+
+export function loadPlanOrder(planId) {
+  const raw = localStorage.getItem(PLAN_ORDER_KEY);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed[planId] || {};
+  } catch (error) {
+    console.warn("Failed to parse plan order; ignoring.");
+    return {};
+  }
+}
+
+export function savePlanOrder(planId, dayId, order) {
+  const raw = localStorage.getItem(PLAN_ORDER_KEY);
+  let parsed = {};
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw) || {};
+    } catch (error) {
+      parsed = {};
+    }
+  }
+  if (!parsed[planId]) {
+    parsed[planId] = {};
+  }
+  parsed[planId][dayId] = order;
+  localStorage.setItem(PLAN_ORDER_KEY, JSON.stringify(parsed));
 }
