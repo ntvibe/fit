@@ -130,6 +130,10 @@ body {
   color: var(--warning);
 }
 
+.badge.paused {
+  color: var(--accent);
+}
+
 .list {
   display: flex;
   flex-direction: column;

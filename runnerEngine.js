@@ -5,6 +5,10 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
   let phaseStart = Date.now();
   let currentTargetSec = null;
   let lastRepActualSec = null;
+  let paused = false;
+  let pausedAt = null;
+  let pausedDurationMs = 0;
+  const completedStepIndexes = new Set();
 
   if (state === "ACTIVE") {
     currentTargetSec = getTargetSec(steps[currentIndex], lastRepActualSec);
@@ -12,10 +16,18 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
 
   function startPhase() {
     phaseStart = Date.now();
+    paused = false;
+    pausedAt = null;
+    pausedDurationMs = 0;
   }
 
   function getElapsedSec() {
-    return Math.floor((Date.now() - phaseStart) / 1000);
+    const now = paused && pausedAt ? pausedAt : Date.now();
+    return Math.floor((now - phaseStart - pausedDurationMs) / 1000);
+  }
+
+  function getCompletedSteps() {
+    return completedStepIndexes.size;
   }
 
   function getSnapshot() {
@@ -23,7 +35,8 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     const elapsedSec = getElapsedSec();
     const targetSec = state === "ACTIVE" ? currentTargetSec : step?.restSec || 0;
     const remaining = targetSec != null ? targetSec - elapsedSec : null;
-    const progress = steps.length ? (currentIndex / steps.length) * 100 : 100;
+    const completedSteps = getCompletedSteps();
+    const progress = steps.length ? (completedSteps / steps.length) * 100 : 100;
     return {
       state,
       step,
@@ -34,11 +47,13 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
       progress,
       totalSteps: steps.length,
       currentIndex,
+      completedSteps,
+      paused,
     };
   }
 
   function tick() {
-    if (state !== "REST") return;
+    if (state !== "REST" || paused) return;
     const elapsedSec = getElapsedSec();
     const step = steps[currentIndex];
     if (!step) return;
@@ -48,7 +63,7 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
   }
 
   function completeCurrent() {
-    if (state !== "ACTIVE") return;
+    if (state !== "ACTIVE" || paused) return;
     const step = steps[currentIndex];
     if (!step) return;
     const elapsedSec = getElapsedSec();
@@ -56,6 +71,7 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     if (step.type === "reps" || step.type === "hold") {
       lastRepActualSec = actualSec || step.targetSec || 0;
     }
+    completedStepIndexes.add(currentIndex);
     if (onLog) {
       onLog({
         exerciseId: step.exerciseId,
@@ -63,6 +79,7 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
         itemIndex: step.itemIndex,
         setIndex: step.setIndex,
         repIndex: step.repIndex,
+        stepIndex: currentIndex,
         targetSec: step.type === "hold" ? step.durationSec : currentTargetSec,
         actualSec,
         timestamp: new Date().toISOString(),
@@ -92,6 +109,40 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     startPhase();
   }
 
+  function pause() {
+    if (paused) return;
+    paused = true;
+    pausedAt = Date.now();
+  }
+
+  function resume() {
+    if (!paused) return;
+    paused = false;
+    if (pausedAt) {
+      pausedDurationMs += Date.now() - pausedAt;
+    }
+    pausedAt = null;
+  }
+
+  function restart() {
+    currentIndex = 0;
+    state = steps.length ? "ACTIVE" : "DONE_DAY";
+    lastRepActualSec = null;
+    completedStepIndexes.clear();
+    currentTargetSec = steps.length ? getTargetSec(steps[currentIndex], lastRepActualSec) : null;
+    startPhase();
+  }
+
+  function jumpToItem(itemIndex) {
+    const targetIndex = steps.findIndex((step) => step.itemIndex === itemIndex);
+    if (targetIndex === -1) return;
+    currentIndex = targetIndex;
+    lastRepActualSec = null;
+    state = "ACTIVE";
+    currentTargetSec = getTargetSec(steps[currentIndex], lastRepActualSec);
+    startPhase();
+  }
+
   function resetPhase() {
     startPhase();
   }
@@ -101,7 +152,15 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     completeCurrent,
     tick,
     resetPhase,
+    pause,
+    resume,
+    restart,
+    jumpToItem,
   };
+}
+
+export function countSteps(day) {
+  return buildSteps(day).length;
 }
 
 function getTargetSec(step, lastRepActualSec) {

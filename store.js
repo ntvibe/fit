@@ -34,6 +34,9 @@ export function createSession(progress, { planId, dayId }) {
     dayId,
     startedAt: new Date().toISOString(),
     completedAt: null,
+    status: "in_progress",
+    pausedAt: null,
+    resumedAt: null,
     log: [],
   };
   saveProgress(progress);
@@ -47,10 +50,18 @@ export function addLogEntry(progress, sessionId, entry) {
   saveProgress(progress);
 }
 
+export function updateSession(progress, sessionId, updates) {
+  const session = progress.sessions[sessionId];
+  if (!session) return;
+  Object.assign(session, updates);
+  saveProgress(progress);
+}
+
 export function completeSession(progress, sessionId) {
   const session = progress.sessions[sessionId];
   if (!session) return;
   session.completedAt = new Date().toISOString();
+  session.status = "completed";
   progress.completedDays[session.dayId] = {
     completedAt: session.completedAt,
     sessionId,
