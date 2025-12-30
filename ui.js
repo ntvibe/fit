@@ -1,5 +1,5 @@
 import { createPlayer } from "./player.js";
-import { countSteps } from "./runnerEngine.js";
+import { countSteps, getStepCountsByItem } from "./runnerEngine.js";
 
 export function renderHome({ app, plan, progress, onReset }) {
   const days = plan.days || [];
@@ -46,11 +46,15 @@ export function renderTrainingDetail({
   onRestart,
 }) {
   const totalSteps = countSteps(day);
+  const stepsPerItem = getStepCountsByItem(day);
   const latestSessionData = latestSession?.session || null;
   const sessionStatus = getSessionStatus(latestSessionData);
   const completedSteps = latestSessionData
     ? getCompletedStepsFromLog(latestSessionData.log)
     : 0;
+  const completedStepsByItem = latestSessionData
+    ? getCompletedStepsByItem(latestSessionData.log, day.items.length)
+    : Array.from({ length: day.items.length }, () => 0);
   const percent = totalSteps ? Math.round((completedSteps / totalSteps) * 100) : 0;
   const completed = progress.completedDays[day.id];
   app.innerHTML = `
@@ -89,16 +93,28 @@ export function renderTrainingDetail({
     <h3 class="section-title">Exercises</h3>
     <div class="stack">
       ${day.items
-        .map((item) => {
+        .map((item, itemIndex) => {
           const detail = item.type === "hold"
             ? `${item.sets} sets • ${item.durationSec}s hold`
             : item.type === "routine"
               ? `${item.sets} set routine`
               : `${item.sets} sets • ${formatReps(item.reps)}`;
+          const totalForItem = stepsPerItem[itemIndex] || 0;
+          const completedForItem = completedStepsByItem[itemIndex] || 0;
+          const percentForItem = totalForItem
+            ? Math.round((completedForItem / totalForItem) * 100)
+            : 0;
           return `
             <div class="card">
               <h3>${formatExercise(item.exerciseId)}</h3>
               <p>${detail}</p>
+              <div class="list-item" style="margin-top: 12px;">
+                <p class="small">Progress</p>
+                <p class="small">${completedForItem} / ${totalForItem} steps</p>
+              </div>
+              <div class="progress-bar" style="margin-top: 8px;">
+                <div class="progress-fill" style="width: ${percentForItem}%"></div>
+              </div>
             </div>
           `;
         })
@@ -259,18 +275,21 @@ export function renderRunner({
       }
       completeButton.disabled = true;
       completeButton.classList.add("ghost");
+      completeButton.textContent = "Complete";
     } else if (snapshot.state === "REST") {
       timerLabelEl.textContent = "REST";
       timerEl.classList.remove("overtime");
       timerEl.textContent = formatTimer(snapshot.remainingSec || 0);
-      completeButton.disabled = true;
-      completeButton.classList.add("ghost");
+      completeButton.disabled = false;
+      completeButton.classList.remove("ghost");
+      completeButton.textContent = "Skip rest";
     } else if (step.type === "routine") {
       timerLabelEl.textContent = "ACTIVE";
       timerEl.textContent = "--:--";
       timerEl.classList.remove("overtime");
       completeButton.disabled = false;
       completeButton.classList.remove("ghost");
+      completeButton.textContent = "Complete";
     } else {
       timerLabelEl.textContent = "ACTIVE";
       const remaining = snapshot.remainingSec ?? 0;
@@ -283,6 +302,7 @@ export function renderRunner({
       }
       completeButton.disabled = false;
       completeButton.classList.remove("ghost");
+      completeButton.textContent = "Complete";
     }
 
     const percent = Math.min(Math.round(snapshot.progress), 100);
@@ -290,7 +310,11 @@ export function renderRunner({
     progressDetailEl.textContent = `${snapshot.completedSteps} / ${snapshot.totalSteps} steps`;
     progressPercentEl.textContent = `${percent}%`;
     pauseButton.textContent = snapshot.paused ? "Resume" : "Pause";
-    instructionEl.textContent = step.type === "routine" ? "Complete routine, then tap Complete." : "";
+    instructionEl.textContent = snapshot.state === "REST"
+      ? "Resting. Tap Skip rest to continue."
+      : step.type === "routine"
+        ? "Complete routine, then tap Complete."
+        : "";
     if (onTick) onTick(snapshot);
   }
 
@@ -301,7 +325,12 @@ export function renderRunner({
   }, 500);
 
   completeButton.addEventListener("click", () => {
-    engine.completeCurrent();
+    const snapshot = engine.getSnapshot();
+    if (snapshot.state === "REST") {
+      engine.skipRest();
+    } else {
+      engine.completeCurrent();
+    }
     update();
   });
 
@@ -394,4 +423,21 @@ function getCompletedStepsFromLog(log) {
       .filter((value) => typeof value === "number"),
   );
   return uniqueSteps.size;
+}
+
+function getCompletedStepsByItem(log, itemCount) {
+  if (!Array.isArray(log)) return Array.from({ length: itemCount }, () => 0);
+  const uniqueByItem = Array.from({ length: itemCount }, () => new Set());
+  log.forEach((entry) => {
+    if (
+      typeof entry.stepIndex !== "number"
+      || typeof entry.itemIndex !== "number"
+      || entry.itemIndex < 0
+      || entry.itemIndex >= itemCount
+    ) {
+      return;
+    }
+    uniqueByItem[entry.itemIndex].add(entry.stepIndex);
+  });
+  return uniqueByItem.map((set) => set.size);
 }
