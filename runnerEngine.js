@@ -150,6 +150,7 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
   return {
     getSnapshot,
     completeCurrent,
+    skipRest,
     tick,
     resetPhase,
     pause,
@@ -157,10 +158,23 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     restart,
     jumpToItem,
   };
+
+  function skipRest() {
+    if (state !== "REST" || paused) return;
+    advance();
+  }
 }
 
 export function countSteps(day) {
   return buildSteps(day).length;
+}
+
+export function getStepCountsByItem(day) {
+  const counts = Array.from({ length: day.items.length }, () => 0);
+  buildSteps(day).forEach((step) => {
+    counts[step.itemIndex] += 1;
+  });
+  return counts;
 }
 
 function getTargetSec(step, lastRepActualSec) {
