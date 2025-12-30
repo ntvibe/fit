@@ -44,6 +44,7 @@ export function renderTrainingDetail({
   progress,
   latestSession,
   onRestart,
+  onReorder,
 }) {
   const totalSteps = countSteps(day);
   const stepsPerItem = getStepCountsByItem(day);
@@ -106,8 +107,16 @@ export function renderTrainingDetail({
             : 0;
           return `
             <div class="card">
-              <h3>${formatExercise(item.exerciseId)}</h3>
-              <p>${detail}</p>
+              <div class="list-item">
+                <div>
+                  <h3>${formatExercise(item.exerciseId)}</h3>
+                  <p>${detail}</p>
+                </div>
+                <div class="order-controls">
+                  <button class="icon-button" data-action="move-up" data-index="${itemIndex}" ${itemIndex === 0 ? "disabled" : ""} aria-label="Move exercise up">↑</button>
+                  <button class="icon-button" data-action="move-down" data-index="${itemIndex}" ${itemIndex === day.items.length - 1 ? "disabled" : ""} aria-label="Move exercise down">↓</button>
+                </div>
+              </div>
               <div class="list-item" style="margin-top: 12px;">
                 <p class="small">Progress</p>
                 <p class="small">${completedForItem} / ${totalForItem} steps</p>
@@ -136,6 +145,21 @@ export function renderTrainingDetail({
   if (restartButton) {
     restartButton.addEventListener("click", () => {
       onRestart();
+    });
+  }
+
+  if (onReorder) {
+    app.querySelectorAll("[data-action='move-up']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.index);
+        onReorder(index, -1);
+      });
+    });
+    app.querySelectorAll("[data-action='move-down']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.index);
+        onReorder(index, 1);
+      });
     });
   }
 }
@@ -194,35 +218,26 @@ export function renderRunner({
         <div class="timer" id="timer">00:00</div>
         <p class="small" id="timer-label">ACTIVE</p>
       </div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-      <div class="list-item">
-        <p class="small" id="progress-detail">0 / 0 steps</p>
-        <p class="small" id="progress-percent">0%</p>
-      </div>
-      <button class="button success" data-action="complete">Complete</button>
-      <div class="nav-row">
-        <button class="button ghost" data-action="pause">Pause</button>
-        <button class="button ghost" data-action="restart">Restart</button>
-      </div>
-      <div class="card">
-        <h3>Choose exercise order</h3>
-        <div class="stack" style="margin-top: 12px;">
-          ${day.items
-            .map(
-              (item, index) => `
-                <button class="button ghost" data-action="jump" data-index="${index}">
-                  ${formatExercise(item.exerciseId)}
-                </button>
-              `,
-            )
-            .join("")}
-        </div>
-      </div>
-      <p class="small" id="instruction"></p>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
     </div>
-  `;
+    <div class="list-item">
+      <p class="small" id="progress-detail">0 / 0 steps</p>
+      <p class="small" id="progress-percent">0%</p>
+    </div>
+    <button class="button success" data-action="complete">Complete</button>
+    <div class="nav-row">
+      <button class="button ghost" data-action="pause">Pause</button>
+      <button class="button ghost" data-action="restart">Restart</button>
+    </div>
+    <div class="card next-card">
+      <p class="small">Up next</p>
+      <h3 id="next-exercise">--</h3>
+      <p class="small" id="next-detail"></p>
+    </div>
+    <p class="small" id="instruction"></p>
+  </div>
+`;
 
   const playerEl = app.querySelector("#player");
   let player = null;
@@ -235,6 +250,8 @@ export function renderRunner({
   const progressDetailEl = app.querySelector("#progress-detail");
   const progressPercentEl = app.querySelector("#progress-percent");
   const instructionEl = app.querySelector("#instruction");
+  const nextExerciseEl = app.querySelector("#next-exercise");
+  const nextDetailEl = app.querySelector("#next-detail");
   const completeButton = app.querySelector("[data-action='complete']");
   const pauseButton = app.querySelector("[data-action='pause']");
   const restartButton = app.querySelector("[data-action='restart']");
@@ -267,6 +284,14 @@ export function renderRunner({
 
     titleEl.textContent = exerciseName;
     metaEl.textContent = buildMeta(step, day);
+    const nextItem = day.items[step.itemIndex + 1];
+    if (nextItem) {
+      nextExerciseEl.textContent = formatExercise(nextItem.exerciseId);
+      nextDetailEl.textContent = buildNextDetail(nextItem);
+    } else {
+      nextExerciseEl.textContent = "Last exercise";
+      nextDetailEl.textContent = "Finish strong to wrap up.";
+    }
 
     if (snapshot.paused) {
       timerLabelEl.textContent = "PAUSED";
@@ -351,14 +376,6 @@ export function renderRunner({
     if (onRestart) onRestart();
   });
 
-  app.querySelectorAll("[data-action='jump']").forEach((button) => {
-    button.addEventListener("click", () => {
-      const index = Number(button.dataset.index);
-      engine.jumpToItem(index);
-      update();
-    });
-  });
-
   app.querySelector("[data-action='exit']").addEventListener("click", () => {
     engine.pause();
     if (onPause) onPause();
@@ -389,12 +406,22 @@ function buildMeta(step, day) {
   if (step.type === "reps") {
     const repsValue = Array.isArray(item.reps) ? item.reps[step.setIndex] : item.reps;
     const repTotal = typeof repsValue === "number" ? repsValue : 1;
-    return `Set ${step.setIndex + 1} / ${setTotal} • Rep ${step.repIndex + 1} / ${repTotal}`;
+    return `Set ${step.setIndex + 1} / ${setTotal} • ${repTotal} reps`;
   }
   if (step.type === "hold") {
     return `Set ${step.setIndex + 1} / ${setTotal} • Hold`;
   }
   return `Set ${step.setIndex + 1} / ${setTotal} • Routine`;
+}
+
+function buildNextDetail(item) {
+  if (item.type === "hold") {
+    return `${item.sets || 1} sets • ${item.durationSec}s hold`;
+  }
+  if (item.type === "routine") {
+    return `${item.sets || 1} set routine`;
+  }
+  return `${item.sets || 1} sets • ${formatReps(item.reps)}`;
 }
 
 function formatTimer(seconds) {
