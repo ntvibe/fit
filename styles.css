@@ -1,0 +1,265 @@
+:root {
+  --bg: #ffffff;
+  --text: #1b1b1b;
+  --muted: #6b6b6b;
+  --card: #ffffff;
+  --shadow-light: #ffffff;
+  --shadow-dark: #d9d9d9;
+  --accent: #0b6dff;
+  --success: #1f9d55;
+  --warning: #ff8c42;
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  min-height: 100vh;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+}
+
+.card h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.button {
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button.primary {
+  color: #ffffff;
+  background: var(--accent);
+  box-shadow: 6px 6px 12px #9ab9ff, -6px -6px 12px #ffffff;
+}
+
+.button.success {
+  color: #ffffff;
+  background: var(--success);
+  box-shadow: 6px 6px 12px #b2e5c8, -6px -6px 12px #ffffff;
+}
+
+.button.ghost {
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--card);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+.badge.complete {
+  color: var(--success);
+}
+
+.badge.pending {
+  color: var(--warning);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 20px 0 8px;
+}
+
+.runner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pose-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+}
+
+.pose1 {
+  animation: pose1Fade 6s infinite;
+}
+
+.pose2 {
+  animation: pose2Fade 6s infinite;
+}
+
+@keyframes pose1Fade {
+  0%, 33% { opacity: 1; }
+  50% { opacity: 0; }
+  83% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes pose2Fade {
+  0%, 33% { opacity: 0; }
+  50% { opacity: 1; }
+  83% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #f1f1f1;
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.timer {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.timer.overtime {
+  color: var(--warning);
+}
+
+.nav-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.error {
+  color: #b00020;
+  font-weight: 600;
+}
+
+.small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.inline-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
