@@ -1,0 +1,279 @@
+{
+  "id": "week1",
+  "name": "Week 1",
+  "meta": {
+    "targetSessionMin": 75,
+    "intensity": "Start conservative, leave reps in reserve",
+    "warmup": {
+      "durationMin": 10,
+      "note": "Light cardio + mobility (10–12 min)"
+    },
+    "restDays": {
+      "activity": "Light walking",
+      "durationMin": 40
+    },
+    "dailyExtras": {
+      "coreAndRehab": [
+        {
+          "type": "hold",
+          "exerciseId": "dead-bug",
+          "sets": 2,
+          "durationSec": 20,
+          "restSec": 20
+        },
+        {
+          "type": "routine",
+          "exerciseId": "low-back-pain-routine",
+          "sets": 1
+        }
+      ]
+    }
+  },
+  "days": [
+    {
+      "id": "training-1",
+      "name": "Training 1 (Legs • Back • Arms)",
+      "items": [
+        {
+          "type": "hold",
+          "exerciseId": "squat-hold-reach",
+          "sets": 2,
+          "durationSec": 40,
+          "restSec": 40,
+          "targetSec": 40
+        },
+        {
+          "type": "reps",
+          "exerciseId": "box-squat",
+          "sets": 3,
+          "reps": [12, 12, 12],
+          "restSec": 120,
+          "targetSec": 45
+        },
+        {
+          "type": "reps",
+          "exerciseId": "dumbbell-lunges",
+          "sets": 3,
+          "reps": [12, 10, 8],
+          "restSec": 90,
+          "targetSec": 50
+        },
+        {
+          "type": "reps",
+          "exerciseId": "lat-pulldown-machine",
+          "sets": 3,
+          "reps": [10, 10, 10],
+          "restSec": 90,
+          "targetSec": 40
+        },
+        {
+          "type": "reps",
+          "exerciseId": "barbell-biceps-curl",
+          "sets": 4,
+          "reps": [12, 12, 12, 12],
+          "restSec": 75,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "triceps-pushdown",
+          "sets": 4,
+          "reps": [15, 15, 15, 15],
+          "restSec": 75,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "cocoons",
+          "sets": 2,
+          "reps": ["max", "max"],
+          "restSec": 60,
+          "targetSec": 45
+        }
+      ]
+    },
+    {
+      "id": "training-2",
+      "name": "Training 2 (Chest • Hamstrings • Shoulders)",
+      "items": [
+        {
+          "type": "hold",
+          "exerciseId": "dead-bug",
+          "sets": 2,
+          "durationSec": 40,
+          "restSec": 30,
+          "targetSec": 40
+        },
+        {
+          "type": "reps",
+          "exerciseId": "flat-barbell-bench-press",
+          "sets": 4,
+          "reps": [6, 6, 6, 6],
+          "restSec": 150,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "incline-dumbbell-press",
+          "sets": 4,
+          "reps": [12, 12, 12, 12],
+          "restSec": 90,
+          "targetSec": 45
+        },
+        {
+          "type": "reps",
+          "exerciseId": "romanian-deadlift",
+          "sets": 3,
+          "reps": [8, 8, 8],
+          "restSec": 120,
+          "targetSec": 45
+        },
+        {
+          "type": "reps",
+          "exerciseId": "leg-curl-machine",
+          "sets": 3,
+          "reps": [15, 15, 15],
+          "restSec": 90,
+          "targetSec": 40
+        },
+        {
+          "type": "reps",
+          "exerciseId": "arnold-press",
+          "sets": 3,
+          "reps": [12, 10, 8],
+          "restSec": 90,
+          "targetSec": 40
+        },
+        {
+          "type": "reps",
+          "exerciseId": "lateral-raises",
+          "sets": 3,
+          "reps": [20, 20, 20],
+          "restSec": 60,
+          "targetSec": 35
+        }
+      ]
+    },
+    {
+      "id": "training-3",
+      "name": "Training 3 (Back • Arms • Chest)",
+      "items": [
+        {
+          "type": "hold",
+          "exerciseId": "hip-switch",
+          "sets": 2,
+          "durationSec": 40,
+          "restSec": 30,
+          "targetSec": 40
+        },
+        {
+          "type": "reps",
+          "exerciseId": "barbell-row",
+          "sets": 4,
+          "reps": [8, 8, 8, 8],
+          "restSec": 120,
+          "targetSec": 45
+        },
+        {
+          "type": "reps",
+          "exerciseId": "t-bar-row",
+          "sets": 3,
+          "reps": [12, 12, 12],
+          "restSec": 120,
+          "targetSec": 45
+        },
+        {
+          "type": "reps",
+          "exerciseId": "scott-curl-preacher",
+          "sets": 3,
+          "reps": [12, 8, 12],
+          "restSec": 75,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "overhead-triceps-press-forehead",
+          "sets": 4,
+          "reps": [10, 10, 10, 10],
+          "restSec": 75,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "push-ups",
+          "sets": 3,
+          "reps": ["max", "max", "max"],
+          "restSec": 75,
+          "targetSec": 45
+        },
+        {
+          "type": "reps",
+          "exerciseId": "captains-chair-leg-raises",
+          "sets": 2,
+          "reps": ["max", "max"],
+          "restSec": 60,
+          "targetSec": 45
+        }
+      ]
+    },
+    {
+      "id": "training-4",
+      "name": "Training 4 (Shoulders • Legs • Arms)",
+      "items": [
+        {
+          "type": "routine",
+          "exerciseId": "low-back-pain-routine",
+          "sets": 1
+        },
+        {
+          "type": "reps",
+          "exerciseId": "standing-military-press",
+          "sets": 4,
+          "reps": [10, 10, 10, 10],
+          "restSec": 120,
+          "targetSec": 40
+        },
+        {
+          "type": "reps",
+          "exerciseId": "lateral-raises",
+          "sets": 3,
+          "reps": [15, 15, 15],
+          "restSec": 60,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "leg-press",
+          "sets": 3,
+          "reps": [20, 15, 10],
+          "restSec": 120,
+          "targetSec": 50
+        },
+        {
+          "type": "reps",
+          "exerciseId": "dumbbell-biceps-curl",
+          "sets": 3,
+          "reps": [12, 12, 16],
+          "restSec": 75,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "triceps-pushdown",
+          "sets": 3,
+          "reps": [20, 20, 20],
+          "restSec": 60,
+          "targetSec": 35
+        },
+        {
+          "type": "reps",
+          "exerciseId": "russian-twists",
+          "sets": 2,
+          "reps": ["max", "max"],
+          "restSec": 60,
+          "targetSec": 45
+        }
+      ]
+    }
+  ]
+}
