@@ -71,20 +71,28 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     if (step.type === "reps" || step.type === "hold") {
       lastRepActualSec = actualSec || step.targetSec || 0;
     }
-    completedStepIndexes.add(currentIndex);
-    if (onLog) {
-      onLog({
-        exerciseId: step.exerciseId,
-        type: step.type,
-        itemIndex: step.itemIndex,
-        setIndex: step.setIndex,
-        repIndex: step.repIndex,
-        stepIndex: currentIndex,
-        targetSec: step.type === "hold" ? step.durationSec : currentTargetSec,
-        actualSec,
-        timestamp: new Date().toISOString(),
-      });
+    const lastIndex = step.type === "reps"
+      ? findLastIndexInSet(step.itemIndex, step.setIndex, currentIndex)
+      : currentIndex;
+    for (let index = currentIndex; index <= lastIndex; index += 1) {
+      const stepToLog = steps[index];
+      if (!stepToLog) continue;
+      completedStepIndexes.add(index);
+      if (onLog) {
+        onLog({
+          exerciseId: stepToLog.exerciseId,
+          type: stepToLog.type,
+          itemIndex: stepToLog.itemIndex,
+          setIndex: stepToLog.setIndex,
+          repIndex: stepToLog.repIndex,
+          stepIndex: index,
+          targetSec: stepToLog.type === "hold" ? stepToLog.durationSec : stepToLog.targetSec,
+          actualSec,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
+    currentIndex = lastIndex;
     if ((step.restSec || 0) > 0) {
       state = "REST";
       startPhase();
@@ -162,6 +170,18 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
   function skipRest() {
     if (state !== "REST" || paused) return;
     advance();
+  }
+
+  function findLastIndexInSet(itemIndex, setIndex, startIndex) {
+    let index = startIndex;
+    while (
+      index + 1 < steps.length
+      && steps[index + 1].itemIndex === itemIndex
+      && steps[index + 1].setIndex === setIndex
+    ) {
+      index += 1;
+    }
+    return index;
   }
 }
 
