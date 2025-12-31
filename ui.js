@@ -54,7 +54,7 @@ export function renderTrainingDetail({
     ? getCompletedStepsFromLog(latestSessionData.log)
     : 0;
   const completedStepsByItem = latestSessionData
-    ? getCompletedStepsByItem(latestSessionData.log, day.items.length)
+    ? getCompletedStepsByItem(latestSessionData.log, day.items)
     : Array.from({ length: day.items.length }, () => 0);
   const percent = totalSteps ? Math.round((completedSteps / totalSteps) * 100) : 0;
   const startedAt = latestSessionData?.startedAt
@@ -173,6 +173,7 @@ export function renderTrainingDetail({
       touchDragIndex = null;
       if (touchTarget) {
         touchTarget.classList.remove("drag-over");
+        delete touchTarget.dataset.dropPosition;
         touchTarget = null;
       }
       rows.forEach((row) => {
@@ -195,20 +196,27 @@ export function renderTrainingDetail({
       });
       row.addEventListener("dragover", (event) => {
         event.preventDefault();
+        if (dragIndex == null) return;
+        const bounds = row.getBoundingClientRect();
+        const isAfter = event.clientY - bounds.top > bounds.height / 2;
+        row.dataset.dropPosition = isAfter ? "after" : "before";
         row.classList.add("drag-over");
       });
       row.addEventListener("dragleave", () => {
         row.classList.remove("drag-over");
+        delete row.dataset.dropPosition;
       });
       row.addEventListener("drop", (event) => {
         event.preventDefault();
         row.classList.remove("drag-over");
         const fromIndex = dragIndex ?? Number(event.dataTransfer?.getData("text/plain"));
         const toIndex = Number(row.dataset.index);
+        const position = row.dataset.dropPosition || "before";
+        delete row.dataset.dropPosition;
         if (Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex === toIndex) {
           return;
         }
-        onReorder(fromIndex, toIndex);
+        onReorder(fromIndex, toIndex, position);
       });
 
       row.addEventListener("touchstart", (event) => {
@@ -228,8 +236,12 @@ export function renderTrainingDetail({
         if (!rowTarget) return;
         if (touchTarget && touchTarget !== rowTarget) {
           touchTarget.classList.remove("drag-over");
+          delete touchTarget.dataset.dropPosition;
         }
         if (rowTarget !== row) {
+          const bounds = rowTarget.getBoundingClientRect();
+          const isAfter = touch.clientY - bounds.top > bounds.height / 2;
+          rowTarget.dataset.dropPosition = isAfter ? "after" : "before";
           rowTarget.classList.add("drag-over");
         }
         touchTarget = rowTarget;
@@ -247,11 +259,12 @@ export function renderTrainingDetail({
         const rowTarget = target?.closest("[data-action='exercise-row']");
         const toIndex = Number(rowTarget?.dataset.index);
         const fromIndex = touchDragIndex;
+        const position = rowTarget?.dataset.dropPosition || "before";
         clearTouchDragState();
         if (Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex === toIndex) {
           return;
         }
-        onReorder(fromIndex, toIndex);
+        onReorder(fromIndex, toIndex, position);
       }, { passive: false });
 
       row.addEventListener("touchcancel", () => {
@@ -571,19 +584,18 @@ function getCompletedStepsFromLog(log) {
   return uniqueSteps.size;
 }
 
-function getCompletedStepsByItem(log, itemCount) {
+function getCompletedStepsByItem(log, items) {
+  const itemCount = items.length;
   if (!Array.isArray(log)) return Array.from({ length: itemCount }, () => 0);
+  const exerciseIndex = new Map(items.map((item, index) => [item.exerciseId, index]));
   const uniqueByItem = Array.from({ length: itemCount }, () => new Set());
   log.forEach((entry) => {
-    if (
-      typeof entry.stepIndex !== "number"
-      || typeof entry.itemIndex !== "number"
-      || entry.itemIndex < 0
-      || entry.itemIndex >= itemCount
-    ) {
-      return;
-    }
-    uniqueByItem[entry.itemIndex].add(entry.stepIndex);
+    if (typeof entry.stepIndex !== "number") return;
+    const mappedIndex = exerciseIndex.get(entry.exerciseId);
+    const fallbackIndex = typeof entry.itemIndex === "number" ? entry.itemIndex : -1;
+    const targetIndex = typeof mappedIndex === "number" ? mappedIndex : fallbackIndex;
+    if (targetIndex < 0 || targetIndex >= itemCount) return;
+    uniqueByItem[targetIndex].add(entry.stepIndex);
   });
   return uniqueByItem.map((set) => set.size);
 }

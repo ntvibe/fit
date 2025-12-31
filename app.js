@@ -92,6 +92,15 @@ function reorderItems(items, order) {
   return ordered;
 }
 
+function getInsertIndex(fromIndex, toIndex, position) {
+  const offset = position === "after" ? 1 : 0;
+  let insertIndex = toIndex + offset;
+  if (fromIndex < insertIndex) {
+    insertIndex -= 1;
+  }
+  return insertIndex;
+}
+
 function render() {
   if (state.cleanup) {
     state.cleanup();
@@ -144,11 +153,15 @@ function render() {
         startRunnerSession(day);
         window.location.hash = `#/run/${day.id}`;
       },
-      onReorder: (fromIndex, toIndex) => {
+      onReorder: (fromIndex, toIndex, position = "before") => {
         if (toIndex < 0 || toIndex >= day.items.length) return;
+        const insertIndex = getInsertIndex(fromIndex, toIndex, position);
         const updated = [...day.items];
         const [moved] = updated.splice(fromIndex, 1);
-        updated.splice(toIndex, 0, moved);
+        if (!moved) return;
+        const clampedIndex = Math.max(0, Math.min(updated.length, insertIndex));
+        if (clampedIndex === fromIndex) return;
+        updated.splice(clampedIndex, 0, moved);
         day.items = updated;
         savePlanOrder(
           state.plan.id,

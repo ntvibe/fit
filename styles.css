@@ -164,6 +164,7 @@ body {
 .exercise-card {
   cursor: grab;
   touch-action: pan-y;
+  position: relative;
 }
 
 .exercise-card.dragging {
@@ -172,8 +173,26 @@ body {
 }
 
 .exercise-card.drag-over {
-  outline: 2px dashed var(--accent);
-  outline-offset: 4px;
+  outline: none;
+}
+
+.exercise-card.drag-over::before,
+.exercise-card.drag-over::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.exercise-card.drag-over[data-drop-position="before"]::before {
+  top: -6px;
+}
+
+.exercise-card.drag-over[data-drop-position="after"]::after {
+  bottom: -6px;
 }
 
 .exercise-order {
