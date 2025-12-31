@@ -151,12 +151,19 @@ body {
   margin-bottom: 12px;
 }
 
+.training-detail {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .align-right {
   text-align: right;
 }
 
 .exercise-card {
   cursor: grab;
+  touch-action: pan-y;
 }
 
 .exercise-card.dragging {
