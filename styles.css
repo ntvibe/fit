@@ -147,32 +147,38 @@ body {
   gap: 12px;
 }
 
-.order-controls {
-  display: flex;
-  gap: 8px;
+.training-actions {
+  margin-bottom: 12px;
 }
 
-.icon-button {
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 14px;
-  background: var(--card);
-  color: var(--muted);
-  font-size: 16px;
-  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
-  cursor: pointer;
-  transition: transform 0.1s ease;
+.align-right {
+  text-align: right;
 }
 
-.icon-button:active {
-  transform: scale(0.96);
+.exercise-card {
+  cursor: grab;
 }
 
-.icon-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
+.exercise-card.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
+.exercise-card.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+}
+
+.exercise-order {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 36px;
+  text-align: center;
+}
+
+.exercise-info {
+  flex: 1;
 }
 
 .link {
