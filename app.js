@@ -144,11 +144,11 @@ function render() {
         startRunnerSession(day);
         window.location.hash = `#/run/${day.id}`;
       },
-      onReorder: (fromIndex, direction) => {
-        const toIndex = fromIndex + direction;
+      onReorder: (fromIndex, toIndex) => {
         if (toIndex < 0 || toIndex >= day.items.length) return;
         const updated = [...day.items];
-        [updated[fromIndex], updated[toIndex]] = [updated[toIndex], updated[fromIndex]];
+        const [moved] = updated.splice(fromIndex, 1);
+        updated.splice(toIndex, 0, moved);
         day.items = updated;
         savePlanOrder(
           state.plan.id,

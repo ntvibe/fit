@@ -57,6 +57,9 @@ export function renderTrainingDetail({
     ? getCompletedStepsByItem(latestSessionData.log, day.items.length)
     : Array.from({ length: day.items.length }, () => 0);
   const percent = totalSteps ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  const lastStartedAt = latestSessionData?.startedAt
+    ? formatDate(latestSessionData.startedAt)
+    : "Not started yet";
   const completed = progress.completedDays[day.id];
   app.innerHTML = `
     <div class="header">
@@ -79,19 +82,33 @@ export function renderTrainingDetail({
         }
       </div>
     </div>
+    <div class="nav-row training-actions">
+      <a class="button primary link" href="#/run/${day.id}">
+        ${sessionStatus === "paused" || sessionStatus === "in_progress" ? "Resume training" : "Start training"}
+      </a>
+      ${
+        onRestart
+          ? `<button class="button ghost" data-action="restart">Reset training</button>`
+          : ""
+      }
+    </div>
     <div class="card">
       <div class="list-item">
         <div>
           <p class="small">Progress</p>
           <h3>${percent}%</h3>
         </div>
-        <p class="small">${completedSteps} / ${totalSteps} steps</p>
+        <div class="align-right">
+          <p class="small">Last started</p>
+          <p class="small">${lastStartedAt}</p>
+        </div>
       </div>
       <div class="progress-bar" style="margin-top: 12px;">
         <div class="progress-fill" style="width: ${percent}%"></div>
       </div>
     </div>
     <h3 class="section-title">Exercises</h3>
+    <p class="small" style="margin-bottom: 8px;">Press and hold an exercise to move it.</p>
     <div class="stack">
       ${day.items
         .map((item, itemIndex) => {
@@ -106,15 +123,12 @@ export function renderTrainingDetail({
             ? Math.round((completedForItem / totalForItem) * 100)
             : 0;
           return `
-            <div class="card">
+            <div class="card exercise-card" data-action="exercise-row" data-index="${itemIndex}">
               <div class="list-item">
-                <div>
+                <div class="exercise-order">${itemIndex + 1}</div>
+                <div class="exercise-info">
                   <h3>${formatExercise(item.exerciseId)}</h3>
                   <p>${detail}</p>
-                </div>
-                <div class="order-controls">
-                  <button class="icon-button" data-action="move-up" data-index="${itemIndex}" ${itemIndex === 0 ? "disabled" : ""} aria-label="Move exercise up">↑</button>
-                  <button class="icon-button" data-action="move-down" data-index="${itemIndex}" ${itemIndex === day.items.length - 1 ? "disabled" : ""} aria-label="Move exercise down">↓</button>
                 </div>
               </div>
               <div class="list-item" style="margin-top: 12px;">
@@ -129,16 +143,6 @@ export function renderTrainingDetail({
         })
         .join("")}
     </div>
-    <div class="nav-row" style="margin-top: 20px;">
-      <a class="button primary link" href="#/run/${day.id}">
-        ${sessionStatus === "paused" || sessionStatus === "in_progress" ? "Resume training" : "Start training"}
-      </a>
-      ${
-        onRestart
-          ? `<button class="button ghost" data-action="restart">Restart from scratch</button>`
-          : ""
-      }
-    </div>
   `;
 
   const restartButton = app.querySelector("[data-action='restart']");
@@ -149,16 +153,38 @@ export function renderTrainingDetail({
   }
 
   if (onReorder) {
-    app.querySelectorAll("[data-action='move-up']").forEach((button) => {
-      button.addEventListener("click", () => {
-        const index = Number(button.dataset.index);
-        onReorder(index, -1);
+    const rows = app.querySelectorAll("[data-action='exercise-row']");
+    let dragIndex = null;
+    rows.forEach((row) => {
+      row.setAttribute("draggable", "true");
+      row.addEventListener("dragstart", (event) => {
+        dragIndex = Number(row.dataset.index);
+        row.classList.add("dragging");
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", String(dragIndex));
+        }
       });
-    });
-    app.querySelectorAll("[data-action='move-down']").forEach((button) => {
-      button.addEventListener("click", () => {
-        const index = Number(button.dataset.index);
-        onReorder(index, 1);
+      row.addEventListener("dragend", () => {
+        row.classList.remove("dragging");
+        dragIndex = null;
+      });
+      row.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        row.classList.add("drag-over");
+      });
+      row.addEventListener("dragleave", () => {
+        row.classList.remove("drag-over");
+      });
+      row.addEventListener("drop", (event) => {
+        event.preventDefault();
+        row.classList.remove("drag-over");
+        const fromIndex = dragIndex ?? Number(event.dataTransfer?.getData("text/plain"));
+        const toIndex = Number(row.dataset.index);
+        if (Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex === toIndex) {
+          return;
+        }
+        onReorder(fromIndex, toIndex);
       });
     });
   }
@@ -394,9 +420,12 @@ function formatExercise(id) {
 }
 
 function formatReps(reps) {
-  if (!Array.isArray(reps)) return reps || "";
+  if (!Array.isArray(reps)) {
+    if (!reps) return "";
+    return reps === "max" ? "Reps max" : `Reps ${reps}`;
+  }
   return reps
-    .map((rep) => (rep === "max" ? "max" : `${rep} reps`))
+    .map((rep) => (rep === "max" ? "Reps max" : `Reps ${rep}`))
     .join(" • ");
 }
 
@@ -406,7 +435,7 @@ function buildMeta(step, day) {
   if (step.type === "reps") {
     const repsValue = Array.isArray(item.reps) ? item.reps[step.setIndex] : item.reps;
     const repTotal = typeof repsValue === "number" ? repsValue : 1;
-    return `Set ${step.setIndex + 1} / ${setTotal} • ${repTotal} reps`;
+    return `Set ${step.setIndex + 1} / ${setTotal} • Reps ${repTotal}`;
   }
   if (step.type === "hold") {
     return `Set ${step.setIndex + 1} / ${setTotal} • Hold`;
