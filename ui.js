@@ -57,91 +57,98 @@ export function renderTrainingDetail({
     ? getCompletedStepsByItem(latestSessionData.log, day.items.length)
     : Array.from({ length: day.items.length }, () => 0);
   const percent = totalSteps ? Math.round((completedSteps / totalSteps) * 100) : 0;
-  const lastStartedAt = latestSessionData?.startedAt
+  const startedAt = latestSessionData?.startedAt
     ? formatDate(latestSessionData.startedAt)
     : "Not started yet";
+  const durationLabel = buildSessionDuration(latestSessionData);
   const completed = progress.completedDays[day.id];
   app.innerHTML = `
-    <div class="header">
-      <a class="button ghost link" href="#/">Back</a>
-      <div></div>
-    </div>
-    <div class="card">
-      <h2>${day.name}</h2>
-      <p class="small">${day.items.length} exercises</p>
-      <div class="inline-list">
-        <span class="badge ${completed ? "complete" : "pending"}">
-          ${completed ? "Completed" : "Not completed"}
-        </span>
+    <div class="training-detail">
+      <div class="header">
+        <a class="button ghost link" href="#/">Back</a>
+        <div></div>
+      </div>
+      <div class="card">
+        <h2>${day.name}</h2>
+        <p class="small">${day.items.length} exercises</p>
+        <div class="inline-list">
+          <span class="badge ${completed ? "complete" : "pending"}">
+            ${completed ? "Completed" : "Not completed"}
+          </span>
+          ${
+            sessionStatus === "paused"
+              ? `<span class="badge paused">Paused</span>`
+              : sessionStatus === "in_progress"
+                ? `<span class="badge pending">In progress</span>`
+                : ""
+          }
+        </div>
+      </div>
+      <div class="nav-row training-actions">
+        <a class="button primary link" href="#/run/${day.id}">
+          ${sessionStatus === "paused" || sessionStatus === "in_progress" ? "Resume training" : "Start training"}
+        </a>
         ${
-          sessionStatus === "paused"
-            ? `<span class="badge paused">Paused</span>`
-            : sessionStatus === "in_progress"
-              ? `<span class="badge pending">In progress</span>`
-              : ""
+          onRestart
+            ? `<button class="button ghost" data-action="restart">Reset training</button>`
+            : ""
         }
       </div>
-    </div>
-    <div class="nav-row training-actions">
-      <a class="button primary link" href="#/run/${day.id}">
-        ${sessionStatus === "paused" || sessionStatus === "in_progress" ? "Resume training" : "Start training"}
-      </a>
-      ${
-        onRestart
-          ? `<button class="button ghost" data-action="restart">Reset training</button>`
-          : ""
-      }
-    </div>
-    <div class="card">
-      <div class="list-item">
-        <div>
-          <p class="small">Progress</p>
-          <h3>${percent}%</h3>
+      <div class="card">
+        <div class="list-item">
+          <div>
+            <p class="small">Progress</p>
+            <h3>${percent}%</h3>
+          </div>
+          <div class="align-right">
+            <p class="small">Started</p>
+            <p class="small">${startedAt}</p>
+          </div>
         </div>
-        <div class="align-right">
-          <p class="small">Last started</p>
-          <p class="small">${lastStartedAt}</p>
+        <div class="list-item" style="margin-top: 12px;">
+          <p class="small">Duration</p>
+          <p class="small">${durationLabel}</p>
+        </div>
+        <div class="progress-bar" style="margin-top: 12px;">
+          <div class="progress-fill" style="width: ${percent}%"></div>
         </div>
       </div>
-      <div class="progress-bar" style="margin-top: 12px;">
-        <div class="progress-fill" style="width: ${percent}%"></div>
-      </div>
-    </div>
-    <h3 class="section-title">Exercises</h3>
-    <p class="small" style="margin-bottom: 8px;">Press and hold an exercise to move it.</p>
-    <div class="stack">
-      ${day.items
-        .map((item, itemIndex) => {
-          const detail = item.type === "hold"
-            ? `${item.sets} sets • ${item.durationSec}s hold`
-            : item.type === "routine"
-              ? `${item.sets} set routine`
-              : `${item.sets} sets • ${formatReps(item.reps)}`;
-          const totalForItem = stepsPerItem[itemIndex] || 0;
-          const completedForItem = completedStepsByItem[itemIndex] || 0;
-          const percentForItem = totalForItem
-            ? Math.round((completedForItem / totalForItem) * 100)
-            : 0;
-          return `
-            <div class="card exercise-card" data-action="exercise-row" data-index="${itemIndex}">
-              <div class="list-item">
-                <div class="exercise-order">${itemIndex + 1}</div>
-                <div class="exercise-info">
-                  <h3>${formatExercise(item.exerciseId)}</h3>
-                  <p>${detail}</p>
+      <h3 class="section-title">Exercises</h3>
+      <p class="small" style="margin-bottom: 8px;">Press and hold an exercise to move it.</p>
+      <div class="stack">
+        ${day.items
+          .map((item, itemIndex) => {
+            const detail = item.type === "hold"
+              ? `${item.sets} sets • ${item.durationSec}s hold`
+              : item.type === "routine"
+                ? `${item.sets} set routine`
+                : `${item.sets} sets • ${formatReps(item.reps)}`;
+            const totalForItem = stepsPerItem[itemIndex] || 0;
+            const completedForItem = completedStepsByItem[itemIndex] || 0;
+            const percentForItem = totalForItem
+              ? Math.round((completedForItem / totalForItem) * 100)
+              : 0;
+            return `
+              <div class="card exercise-card" data-action="exercise-row" data-index="${itemIndex}">
+                <div class="list-item">
+                  <div class="exercise-order">${itemIndex + 1}</div>
+                  <div class="exercise-info">
+                    <h3>${formatExercise(item.exerciseId)}</h3>
+                    <p>${detail}</p>
+                  </div>
+                </div>
+                <div class="list-item" style="margin-top: 12px;">
+                  <p class="small">Progress</p>
+                  <p class="small">${completedForItem} / ${totalForItem} steps</p>
+                </div>
+                <div class="progress-bar" style="margin-top: 8px;">
+                  <div class="progress-fill" style="width: ${percentForItem}%"></div>
                 </div>
               </div>
-              <div class="list-item" style="margin-top: 12px;">
-                <p class="small">Progress</p>
-                <p class="small">${completedForItem} / ${totalForItem} steps</p>
-              </div>
-              <div class="progress-bar" style="margin-top: 8px;">
-                <div class="progress-fill" style="width: ${percentForItem}%"></div>
-              </div>
-            </div>
-          `;
-        })
-        .join("")}
+            `;
+          })
+          .join("")}
+      </div>
     </div>
   `;
 
@@ -155,6 +162,23 @@ export function renderTrainingDetail({
   if (onReorder) {
     const rows = app.querySelectorAll("[data-action='exercise-row']");
     let dragIndex = null;
+    let touchDragIndex = null;
+    let touchTarget = null;
+    let longPressTimer = null;
+    const clearTouchDragState = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      touchDragIndex = null;
+      if (touchTarget) {
+        touchTarget.classList.remove("drag-over");
+        touchTarget = null;
+      }
+      rows.forEach((row) => {
+        row.classList.remove("dragging");
+      });
+    };
     rows.forEach((row) => {
       row.setAttribute("draggable", "true");
       row.addEventListener("dragstart", (event) => {
@@ -185,6 +209,53 @@ export function renderTrainingDetail({
           return;
         }
         onReorder(fromIndex, toIndex);
+      });
+
+      row.addEventListener("touchstart", (event) => {
+        if (event.touches.length !== 1) return;
+        longPressTimer = window.setTimeout(() => {
+          touchDragIndex = Number(row.dataset.index);
+          row.classList.add("dragging");
+        }, 250);
+      }, { passive: true });
+
+      row.addEventListener("touchmove", (event) => {
+        if (touchDragIndex == null) return;
+        event.preventDefault();
+        const touch = event.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const rowTarget = target?.closest("[data-action='exercise-row']");
+        if (!rowTarget) return;
+        if (touchTarget && touchTarget !== rowTarget) {
+          touchTarget.classList.remove("drag-over");
+        }
+        if (rowTarget !== row) {
+          rowTarget.classList.add("drag-over");
+        }
+        touchTarget = rowTarget;
+      }, { passive: false });
+
+      row.addEventListener("touchend", (event) => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+        if (touchDragIndex == null) return;
+        event.preventDefault();
+        const touch = event.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const rowTarget = target?.closest("[data-action='exercise-row']");
+        const toIndex = Number(rowTarget?.dataset.index);
+        const fromIndex = touchDragIndex;
+        clearTouchDragState();
+        if (Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex === toIndex) {
+          return;
+        }
+        onReorder(fromIndex, toIndex);
+      }, { passive: false });
+
+      row.addEventListener("touchcancel", () => {
+        clearTouchDragState();
       });
     });
   }
@@ -462,6 +533,25 @@ function formatTimer(seconds) {
 function formatDate(value) {
   if (!value) return "";
   return new Date(value).toLocaleString();
+}
+
+function buildSessionDuration(session) {
+  if (!session?.startedAt) return "00:00";
+  const start = new Date(session.startedAt).getTime();
+  const end = session.completedAt ? new Date(session.completedAt).getTime() : Date.now();
+  const durationMs = Math.max(end - start, 0);
+  return formatDuration(durationMs);
+}
+
+function formatDuration(durationMs) {
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function getSessionStatus(session) {
