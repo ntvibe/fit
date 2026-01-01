@@ -4,6 +4,16 @@ export function createPlayer(container, exerciseId) {
   container.innerHTML = `
     <div class="pose-layer pose1"></div>
     <div class="pose-layer pose2"></div>
+    <div class="player-overlay">
+      <div class="player-title-block">
+        <div class="player-title"></div>
+        <div class="player-sets"></div>
+      </div>
+      <div class="player-reps">
+        <div class="player-reps-label">Reps</div>
+        <div class="player-reps-value"></div>
+      </div>
+    </div>
   `;
   const pose1 = container.querySelector(".pose1");
   const pose2 = container.querySelector(".pose2");

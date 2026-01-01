@@ -261,7 +261,7 @@ body {
 .player {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 3 / 4;
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
@@ -282,6 +282,56 @@ body {
   background-size: cover;
   background-position: center;
   opacity: 0;
+}
+
+.player-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.player-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.player-title {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.player-sets {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.player-reps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.player-reps-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+.player-reps-value {
+  font-size: 26px;
+  font-weight: 700;
 }
 
 .pose1 {

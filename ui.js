@@ -345,10 +345,6 @@ export function renderRunner({
       <div></div>
     </div>
     <div class="runner">
-      <div class="runner-header">
-        <h2 class="runner-title"></h2>
-        <p class="runner-meta"></p>
-      </div>
       <div class="player" id="player"></div>
       <div class="runner-timer">
         <div class="timer-block">
@@ -381,8 +377,10 @@ export function renderRunner({
   const playerEl = app.querySelector("#player");
   let player = null;
   let currentExercise = null;
-  const titleEl = app.querySelector(".runner-title");
-  const metaEl = app.querySelector(".runner-meta");
+  let playerTitleEl = null;
+  let playerSetsEl = null;
+  let playerRepsLabelEl = null;
+  let playerRepsValueEl = null;
   const timerEl = app.querySelector("#timer");
   const timerLabelEl = app.querySelector("#timer-label");
   const progressFillEl = app.querySelector("#progress-fill");
@@ -399,8 +397,18 @@ export function renderRunner({
   function update() {
     const snapshot = engine.getSnapshot();
     if (snapshot.state === "DONE_DAY") {
-      titleEl.textContent = "Training completed";
-      metaEl.textContent = "Great work!";
+      if (playerTitleEl) {
+        playerTitleEl.textContent = "Training completed";
+      }
+      if (playerSetsEl) {
+        playerSetsEl.textContent = "Great work!";
+      }
+      if (playerRepsLabelEl) {
+        playerRepsLabelEl.textContent = "Reps";
+      }
+      if (playerRepsValueEl) {
+        playerRepsValueEl.textContent = "--";
+      }
       timerEl.textContent = "00:00";
       timerLabelEl.textContent = "DONE";
       progressFillEl.style.width = "100%";
@@ -418,13 +426,28 @@ export function renderRunner({
       currentExercise = exerciseName;
       if (!player) {
         player = createPlayer(playerEl, step.exerciseId);
+        playerTitleEl = playerEl.querySelector(".player-title");
+        playerSetsEl = playerEl.querySelector(".player-sets");
+        playerRepsLabelEl = playerEl.querySelector(".player-reps-label");
+        playerRepsValueEl = playerEl.querySelector(".player-reps-value");
       } else {
         player.setExercise(step.exerciseId);
       }
     }
 
-    titleEl.textContent = exerciseName;
-    metaEl.textContent = buildMeta(step, day);
+    if (playerTitleEl) {
+      playerTitleEl.textContent = exerciseName;
+    }
+    if (playerSetsEl) {
+      playerSetsEl.textContent = buildSetLabel(step, day);
+    }
+    const repsStat = buildRepsStat(step, day);
+    if (playerRepsLabelEl) {
+      playerRepsLabelEl.textContent = repsStat.label;
+    }
+    if (playerRepsValueEl) {
+      playerRepsValueEl.textContent = repsStat.value;
+    }
     const nextItem = day.items[step.itemIndex + 1];
     if (nextItem) {
       nextExerciseEl.textContent = formatExercise(nextItem.exerciseId);
@@ -553,18 +576,32 @@ function formatReps(reps) {
     .join(" • ");
 }
 
-function buildMeta(step, day) {
+function buildSetLabel(step, day) {
   const item = day.items[step.itemIndex];
   const setTotal = item.sets || 1;
-  if (step.type === "reps") {
-    const repsValue = Array.isArray(item.reps) ? item.reps[step.setIndex] : item.reps;
-    const repTotal = typeof repsValue === "number" ? repsValue : 1;
-    return `Set ${step.setIndex + 1} / ${setTotal} • Reps ${repTotal}`;
-  }
+  return `Set ${step.setIndex + 1} / ${setTotal}`;
+}
+
+function buildRepsStat(step, day) {
+  const item = day.items[step.itemIndex];
   if (step.type === "hold") {
-    return `Set ${step.setIndex + 1} / ${setTotal} • Hold`;
+    return {
+      label: "Hold",
+      value: `${step.durationSec || item.durationSec || item.targetSec || 0}s`,
+    };
   }
-  return `Set ${step.setIndex + 1} / ${setTotal} • Routine`;
+  if (step.type === "routine") {
+    return {
+      label: "Routine",
+      value: "--",
+    };
+  }
+  const repsValue = Array.isArray(item.reps) ? item.reps[step.setIndex] : item.reps;
+  if (repsValue === "max") {
+    return { label: "Reps", value: "Max" };
+  }
+  const repTotal = typeof repsValue === "number" ? repsValue : 1;
+  return { label: "Reps", value: String(repTotal) };
 }
 
 function buildNextDetail(item) {
