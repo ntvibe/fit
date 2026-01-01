@@ -224,6 +224,36 @@ body {
   gap: 16px;
 }
 
+.runner-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.runner-title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.runner-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.runner-timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.timer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .next-card h3 {
   margin: 6px 0;
 }
@@ -234,8 +264,6 @@ body {
   aspect-ratio: 1 / 1;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--card);
-  box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -307,6 +335,13 @@ body {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  width: 100%;
+  justify-content: center;
+}
+
+.nav-row .button {
+  flex: 1;
+  text-align: center;
 }
 
 .error {
