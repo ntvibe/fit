@@ -6,7 +6,9 @@ import {
   createSession,
   addLogEntry,
   completeSession,
+  removeLogEntries,
   updateSession,
+  reopenSession,
   loadPlanOrder,
   savePlanOrder,
 } from "./store.js";
@@ -46,6 +48,17 @@ function startRunnerSession(day) {
     onDone: () => completeSession(state.progress, sessionId),
   });
   state.runnerSession = { dayId: day.id, sessionId, engine };
+}
+
+function ensureRunnerSession(day) {
+  if (!state.runnerSession || state.runnerSession.dayId !== day.id) {
+    startRunnerSession(day);
+    return;
+  }
+  const currentSession = state.progress.sessions[state.runnerSession.sessionId];
+  if (currentSession?.status === "completed") {
+    startRunnerSession(day);
+  }
 }
 
 async function init() {
@@ -153,6 +166,20 @@ function render() {
         startRunnerSession(day);
         window.location.hash = `#/run/${day.id}`;
       },
+      onSelectExercise: (itemIndex) => {
+        ensureRunnerSession(day);
+        state.runnerSession.engine.jumpToItem(itemIndex);
+        state.runnerSession.engine.resume();
+        const session = state.progress.sessions[state.runnerSession.sessionId];
+        if (session?.status === "paused") {
+          updateSession(state.progress, state.runnerSession.sessionId, {
+            status: "in_progress",
+            resumedAt: new Date().toISOString(),
+            pausedAt: null,
+          });
+        }
+        window.location.hash = `#/run/${day.id}`;
+      },
       onReorder: (fromIndex, toIndex, position = "before") => {
         if (toIndex < 0 || toIndex >= day.items.length) return;
         const insertIndex = getInsertIndex(fromIndex, toIndex, position);
@@ -218,6 +245,13 @@ function render() {
       },
       onExit: () => {
         window.location.hash = `#/training/${day.id}`;
+      },
+      onUndo: (stepIndexes) => {
+        removeLogEntries(state.progress, state.runnerSession.sessionId, stepIndexes);
+        const session = state.progress.sessions[state.runnerSession.sessionId];
+        if (session?.status === "completed") {
+          reopenSession(state.progress, state.runnerSession.sessionId);
+        }
       },
     });
     return;

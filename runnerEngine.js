@@ -9,6 +9,7 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
   let pausedAt = null;
   let pausedDurationMs = 0;
   const completedStepIndexes = new Set();
+  const undoStack = [];
 
   if (state === "ACTIVE") {
     currentTargetSec = getTargetSec(steps[currentIndex], lastRepActualSec);
@@ -66,6 +67,16 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     if (state !== "ACTIVE" || paused) return;
     const step = steps[currentIndex];
     if (!step) return;
+    const previousState = {
+      state,
+      currentIndex,
+      phaseStart,
+      currentTargetSec,
+      lastRepActualSec,
+      paused,
+      pausedAt,
+      pausedDurationMs,
+    };
     const elapsedSec = getElapsedSec();
     const actualSec = step.type === "routine" ? 0 : elapsedSec;
     if (step.type === "reps" || step.type === "hold") {
@@ -74,10 +85,12 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     const lastIndex = step.type === "reps"
       ? findLastIndexInSet(step.itemIndex, step.setIndex, currentIndex)
       : currentIndex;
+    const completedIndexes = [];
     for (let index = currentIndex; index <= lastIndex; index += 1) {
       const stepToLog = steps[index];
       if (!stepToLog) continue;
       completedStepIndexes.add(index);
+      completedIndexes.push(index);
       if (onLog) {
         onLog({
           exerciseId: stepToLog.exerciseId,
@@ -91,6 +104,9 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
           timestamp: new Date().toISOString(),
         });
       }
+    }
+    if (completedIndexes.length > 0) {
+      undoStack.push({ previousState, completedIndexes });
     }
     currentIndex = lastIndex;
     if ((step.restSec || 0) > 0) {
@@ -137,6 +153,7 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     state = steps.length ? "ACTIVE" : "DONE_DAY";
     lastRepActualSec = null;
     completedStepIndexes.clear();
+    undoStack.length = 0;
     currentTargetSec = steps.length ? getTargetSec(steps[currentIndex], lastRepActualSec) : null;
     startPhase();
   }
@@ -147,12 +164,34 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     currentIndex = targetIndex;
     lastRepActualSec = null;
     state = "ACTIVE";
+    undoStack.length = 0;
     currentTargetSec = getTargetSec(steps[currentIndex], lastRepActualSec);
     startPhase();
   }
 
   function resetPhase() {
     startPhase();
+  }
+
+  function canUndo() {
+    return undoStack.length > 0;
+  }
+
+  function undoLast() {
+    const entry = undoStack.pop();
+    if (!entry) return null;
+    entry.completedIndexes.forEach((index) => {
+      completedStepIndexes.delete(index);
+    });
+    state = entry.previousState.state;
+    currentIndex = entry.previousState.currentIndex;
+    phaseStart = entry.previousState.phaseStart;
+    currentTargetSec = entry.previousState.currentTargetSec;
+    lastRepActualSec = entry.previousState.lastRepActualSec;
+    paused = entry.previousState.paused;
+    pausedAt = entry.previousState.pausedAt;
+    pausedDurationMs = entry.previousState.pausedDurationMs;
+    return entry.completedIndexes;
   }
 
   return {
@@ -165,6 +204,8 @@ export function createRunnerEngine(day, { onLog, onDone } = {}) {
     resume,
     restart,
     jumpToItem,
+    undoLast,
+    canUndo,
   };
 
   function skipRest() {
