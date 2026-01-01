@@ -345,14 +345,17 @@ export function renderRunner({
       <div></div>
     </div>
     <div class="runner">
-      <div class="card">
+      <div class="runner-header">
         <h2 class="runner-title"></h2>
         <p class="runner-meta"></p>
       </div>
       <div class="player" id="player"></div>
-      <div class="card">
-        <div class="timer" id="timer">00:00</div>
-        <p class="small" id="timer-label">ACTIVE</p>
+      <div class="runner-timer">
+        <div class="timer-block">
+          <div class="timer" id="timer">00:00</div>
+          <p class="small" id="timer-label">ACTIVE</p>
+        </div>
+        <button class="button success" data-action="complete">Complete</button>
       </div>
     <div class="progress-bar">
       <div class="progress-fill" id="progress-fill"></div>
@@ -361,7 +364,6 @@ export function renderRunner({
       <p class="small" id="progress-detail">0 / 0 steps</p>
       <p class="small" id="progress-percent">0%</p>
     </div>
-    <button class="button success" data-action="complete">Complete</button>
     <div class="nav-row">
       <button class="button ghost" data-action="pause">Pause</button>
       <button class="button ghost" data-action="undo">Undo</button>
