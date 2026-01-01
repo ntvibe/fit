@@ -45,6 +45,7 @@ export function renderTrainingDetail({
   latestSession,
   onRestart,
   onReorder,
+  onSelectExercise,
 }) {
   const totalSteps = countSteps(day);
   const stepsPerItem = getStepCountsByItem(day);
@@ -114,7 +115,7 @@ export function renderTrainingDetail({
         </div>
       </div>
       <h3 class="section-title">Exercises</h3>
-      <p class="small" style="margin-bottom: 8px;">Press and hold an exercise to move it.</p>
+      <p class="small" style="margin-bottom: 8px;">Tap an exercise to jump in. Press and hold to move it.</p>
       <div class="stack">
         ${day.items
           .map((item, itemIndex) => {
@@ -159,12 +160,32 @@ export function renderTrainingDetail({
     });
   }
 
+  const rows = app.querySelectorAll("[data-action='exercise-row']");
+  let suppressClick = false;
+  if (onSelectExercise) {
+    rows.forEach((row) => {
+      row.addEventListener("click", () => {
+        if (suppressClick) {
+          suppressClick = false;
+          return;
+        }
+        const index = Number(row.dataset.index);
+        if (Number.isNaN(index)) return;
+        onSelectExercise(index);
+      });
+    });
+  }
+
   if (onReorder) {
-    const rows = app.querySelectorAll("[data-action='exercise-row']");
     let dragIndex = null;
     let touchDragIndex = null;
     let touchTarget = null;
     let longPressTimer = null;
+    const releaseSuppressClick = () => {
+      window.setTimeout(() => {
+        suppressClick = false;
+      }, 0);
+    };
     const clearTouchDragState = () => {
       if (longPressTimer) {
         clearTimeout(longPressTimer);
@@ -179,12 +200,14 @@ export function renderTrainingDetail({
       rows.forEach((row) => {
         row.classList.remove("dragging");
       });
+      releaseSuppressClick();
     };
     rows.forEach((row) => {
       row.setAttribute("draggable", "true");
       row.addEventListener("dragstart", (event) => {
         dragIndex = Number(row.dataset.index);
         row.classList.add("dragging");
+        suppressClick = true;
         if (event.dataTransfer) {
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("text/plain", String(dragIndex));
@@ -193,6 +216,7 @@ export function renderTrainingDetail({
       row.addEventListener("dragend", () => {
         row.classList.remove("dragging");
         dragIndex = null;
+        releaseSuppressClick();
       });
       row.addEventListener("dragover", (event) => {
         event.preventDefault();
@@ -224,6 +248,7 @@ export function renderTrainingDetail({
         longPressTimer = window.setTimeout(() => {
           touchDragIndex = Number(row.dataset.index);
           row.classList.add("dragging");
+          suppressClick = true;
         }, 250);
       }, { passive: true });
 
@@ -312,6 +337,7 @@ export function renderRunner({
   onResume,
   onRestart,
   onTick,
+  onUndo,
 }) {
   app.innerHTML = `
     <div class="header">
@@ -338,6 +364,7 @@ export function renderRunner({
     <button class="button success" data-action="complete">Complete</button>
     <div class="nav-row">
       <button class="button ghost" data-action="pause">Pause</button>
+      <button class="button ghost" data-action="undo">Undo</button>
       <button class="button ghost" data-action="restart">Restart</button>
     </div>
     <div class="card next-card">
@@ -364,6 +391,7 @@ export function renderRunner({
   const nextDetailEl = app.querySelector("#next-detail");
   const completeButton = app.querySelector("[data-action='complete']");
   const pauseButton = app.querySelector("[data-action='pause']");
+  const undoButton = app.querySelector("[data-action='undo']");
   const restartButton = app.querySelector("[data-action='restart']");
 
   function update() {
@@ -377,6 +405,7 @@ export function renderRunner({
       progressDetailEl.textContent = `${snapshot.totalSteps} / ${snapshot.totalSteps} steps`;
       progressPercentEl.textContent = "100%";
       instructionEl.textContent = "";
+      undoButton.disabled = !engine.canUndo();
       if (onComplete) onComplete();
       return;
     }
@@ -445,6 +474,7 @@ export function renderRunner({
     progressDetailEl.textContent = `${snapshot.completedSteps} / ${snapshot.totalSteps} steps`;
     progressPercentEl.textContent = `${percent}%`;
     pauseButton.textContent = snapshot.paused ? "Resume" : "Pause";
+    undoButton.disabled = !engine.canUndo();
     instructionEl.textContent = snapshot.state === "REST"
       ? "Resting. Tap Skip rest to continue."
       : step.type === "routine"
@@ -477,6 +507,14 @@ export function renderRunner({
     } else {
       engine.pause();
       if (onPause) onPause();
+    }
+    update();
+  });
+
+  undoButton.addEventListener("click", () => {
+    const undone = engine.undoLast();
+    if (undone?.length && onUndo) {
+      onUndo(undone);
     }
     update();
   });

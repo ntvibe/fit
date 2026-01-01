@@ -51,6 +51,15 @@ export function addLogEntry(progress, sessionId, entry) {
   saveProgress(progress);
 }
 
+export function removeLogEntries(progress, sessionId, stepIndexes) {
+  const session = progress.sessions[sessionId];
+  if (!session || !Array.isArray(session.log)) return;
+  const removeSet = new Set(stepIndexes.filter((value) => typeof value === "number"));
+  if (removeSet.size === 0) return;
+  session.log = session.log.filter((entry) => !removeSet.has(entry.stepIndex));
+  saveProgress(progress);
+}
+
 export function updateSession(progress, sessionId, updates) {
   const session = progress.sessions[sessionId];
   if (!session) return;
@@ -67,6 +76,15 @@ export function completeSession(progress, sessionId) {
     completedAt: session.completedAt,
     sessionId,
   };
+  saveProgress(progress);
+}
+
+export function reopenSession(progress, sessionId) {
+  const session = progress.sessions[sessionId];
+  if (!session) return;
+  session.completedAt = null;
+  session.status = "in_progress";
+  delete progress.completedDays[session.dayId];
   saveProgress(progress);
 }
 
