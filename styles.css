@@ -291,8 +291,8 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   padding: 16px;
-  color: #ffffff;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  text-shadow: 0 2px 6px rgba(255, 255, 255, 0.35);
   pointer-events: none;
   z-index: 2;
 }
