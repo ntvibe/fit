@@ -28,6 +28,9 @@ const state = {
   runnerSession: null,
   cleanup: null,
 };
+const PWA_PROMPT_STORAGE_KEY = "fitnessPwaPromptDismissedAt";
+const PWA_PROMPT_SUPPRESS_DAYS = 14;
+let deferredInstallPrompt = null;
 
 function getLatestSessionForDay(progress, dayId) {
   const sessions = Object.entries(progress.sessions || {})
@@ -69,6 +72,108 @@ async function init() {
     state.error = "Unable to load workout plan. Please verify /data/week1.json.";
   }
   render();
+}
+
+function setupPwaPrompt() {
+  if (!isMobileDevice() || isRunningStandalone()) return;
+  if (isPromptDismissedRecently()) return;
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    showPwaPrompt({ canInstall: true });
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    dismissPwaPrompt(true);
+  });
+
+  if (!deferredInstallPrompt && isIosDevice()) {
+    showPwaPrompt({ canInstall: false });
+  }
+}
+
+function isMobileDevice() {
+  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function isIosDevice() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function isRunningStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function isPromptDismissedRecently() {
+  const stored = localStorage.getItem(PWA_PROMPT_STORAGE_KEY);
+  if (!stored) return false;
+  const dismissedAt = Number(stored);
+  if (Number.isNaN(dismissedAt)) return false;
+  const elapsedDays = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
+  return elapsedDays < PWA_PROMPT_SUPPRESS_DAYS;
+}
+
+function dismissPwaPrompt(installed = false) {
+  const prompt = document.querySelector(".pwa-prompt");
+  if (prompt) {
+    prompt.remove();
+  }
+  if (!installed) {
+    localStorage.setItem(PWA_PROMPT_STORAGE_KEY, String(Date.now()));
+  }
+}
+
+function showPwaPrompt({ canInstall }) {
+  if (document.querySelector(".pwa-prompt")) return;
+
+  const prompt = document.createElement("div");
+  prompt.className = "pwa-prompt card";
+
+  const message = document.createElement("div");
+  message.className = "pwa-prompt__message";
+  const title = document.createElement("strong");
+  title.textContent = "Add Fitness MVP to your home screen?";
+  const body = document.createElement("span");
+  body.textContent = canInstall
+    ? "Install the app for quick access and offline support."
+    : "Use the share menu and tap “Add to Home Screen” to install.";
+  message.append(title, body);
+
+  const actions = document.createElement("div");
+  actions.className = "pwa-prompt__actions";
+
+  const dismissButton = document.createElement("button");
+  dismissButton.type = "button";
+  dismissButton.className = "button ghost";
+  dismissButton.textContent = "Not now";
+  dismissButton.addEventListener("click", () => dismissPwaPrompt());
+
+  actions.appendChild(dismissButton);
+
+  if (canInstall) {
+    const installButton = document.createElement("button");
+    installButton.type = "button";
+    installButton.className = "button primary";
+    installButton.textContent = "Install";
+    installButton.addEventListener("click", async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice.outcome !== "accepted") {
+        dismissPwaPrompt();
+      }
+      deferredInstallPrompt = null;
+    });
+    actions.appendChild(installButton);
+  }
+
+  prompt.append(message, actions);
+  document.body.appendChild(prompt);
 }
 
 function applyPlanOrder(plan) {
@@ -262,3 +367,4 @@ function render() {
 
 onRouteChange(render);
 init();
+setupPwaPrompt();
