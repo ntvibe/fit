@@ -434,6 +434,9 @@ export function renderRunner({
         player.setExercise(step.exerciseId);
       }
     }
+    if (player) {
+      player.setResting(snapshot.state === "REST");
+    }
 
     if (playerTitleEl) {
       playerTitleEl.textContent = exerciseName;
