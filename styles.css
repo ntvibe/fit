@@ -1,16 +1,17 @@
 :root {
-  --bg: #ffffff;
+  --bg: #e0e0e0;
   --text: #1b1b1b;
   --muted: #6b6b6b;
-  --card: #ffffff;
+  --card: linear-gradient(145deg, #cacaca, #f0f0f0);
   --shadow-light: #ffffff;
-  --shadow-dark: #d9d9d9;
+  --shadow-dark: #989898;
+  --surface-shadow: 32px 32px 64px #989898, -32px -32px 64px #ffffff;
   --accent: #0b6dff;
   --success: #1f9d55;
   --warning: #ff8c42;
-  --radius-lg: 24px;
-  --radius-md: 18px;
-  --radius-sm: 12px;
+  --radius-lg: 32px;
+  --radius-md: 32px;
+  --radius-sm: 32px;
 }
 
 * {
@@ -58,7 +59,7 @@ body {
   background: var(--card);
   border-radius: var(--radius-lg);
   padding: 16px;
-  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  box-shadow: var(--surface-shadow);
 }
 
 .card h3 {
@@ -80,7 +81,7 @@ body {
   font-weight: 600;
   background: var(--card);
   color: var(--text);
-  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  box-shadow: var(--surface-shadow);
   cursor: pointer;
   transition: transform 0.1s ease;
 }
