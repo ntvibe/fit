@@ -1,15 +1,25 @@
 import { createPlayer } from "./player.js";
 import { countSteps, getStepCountsByItem } from "./runnerEngine.js";
 
-export function renderHome({ app, plan, progress, onReset }) {
+export function renderHome({ app, plan, progress, settings, onReset, onUpdateSettings }) {
   const days = plan.days || [];
+  const restBetweenRepsSec = settings?.restBetweenRepsSec ?? 60;
   app.innerHTML = `
     <div class="header">
       <div>
         <h1 class="title">${plan.name}</h1>
         <p class="subtitle">${plan.meta?.intensity || ""}</p>
       </div>
-      <a class="button ghost link" href="#/history">History</a>
+      <div class="header-actions">
+        <button class="icon-button ghost" data-action="open-settings" aria-label="Open settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.65l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.65 8.83a.5.5 0 0 0 .12.65l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.65l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.25.1.54.01.68-.22l1.92-3.32a.5.5 0 0 0-.12-.65l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z"
+            />
+          </svg>
+        </button>
+        <a class="button ghost link" href="#/history">History</a>
+      </div>
     </div>
     <div class="stack">
       ${days
@@ -32,10 +42,68 @@ export function renderHome({ app, plan, progress, onReset }) {
         .join("")}
       <button class="button ghost" data-action="reset">Reset progress</button>
     </div>
+    <div class="modal" data-modal="settings" aria-hidden="true">
+      <div class="modal-backdrop" data-action="close-settings"></div>
+      <div class="modal-card card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="modal-header">
+          <h2 id="settings-title">Settings</h2>
+          <button class="icon-button ghost" data-action="close-settings" aria-label="Close settings">
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <label class="field">
+            <span class="field-label">Break between reps</span>
+            <div class="slider-row">
+              <input
+                type="range"
+                min="0"
+                max="180"
+                value="${restBetweenRepsSec}"
+                data-action="rest-slider"
+                aria-label="Break between reps"
+              />
+              <span class="slider-value" data-role="rest-value">${restBetweenRepsSec}s</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
   `;
   app.querySelector("[data-action='reset']").addEventListener("click", () => {
     onReset();
   });
+
+  const settingsModal = app.querySelector("[data-modal='settings']");
+  const openButton = app.querySelector("[data-action='open-settings']");
+  const closeButtons = app.querySelectorAll("[data-action='close-settings']");
+  const slider = app.querySelector("[data-action='rest-slider']");
+  const valueLabel = app.querySelector("[data-role='rest-value']");
+
+  const setModalOpen = (isOpen) => {
+    if (!settingsModal) return;
+    settingsModal.classList.toggle("is-visible", isOpen);
+    settingsModal.setAttribute("aria-hidden", String(!isOpen));
+    document.body.style.overflow = isOpen ? "hidden" : "";
+  };
+
+  if (openButton) {
+    openButton.addEventListener("click", () => setModalOpen(true));
+  }
+
+  closeButtons.forEach((button) => {
+    button.addEventListener("click", () => setModalOpen(false));
+  });
+
+  if (slider && valueLabel) {
+    slider.addEventListener("input", () => {
+      const value = Number(slider.value);
+      valueLabel.textContent = `${value}s`;
+      if (onUpdateSettings) {
+        onUpdateSettings({ restBetweenRepsSec: value });
+      }
+    });
+  }
 }
 
 export function renderTrainingDetail({

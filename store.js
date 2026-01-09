@@ -1,5 +1,10 @@
 const STORAGE_KEY = "fitness_mvp_progress_v1";
 const PLAN_ORDER_KEY = "fitness_mvp_plan_order_v1";
+const SETTINGS_KEY = "fitness_mvp_settings_v1";
+
+const DEFAULT_SETTINGS = {
+  restBetweenRepsSec: 60,
+};
 
 export function loadProgress() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -115,4 +120,31 @@ export function savePlanOrder(planId, dayId, order) {
   }
   parsed[planId][dayId] = order;
   localStorage.setItem(PLAN_ORDER_KEY, JSON.stringify(parsed));
+}
+
+export function loadSettings() {
+  const raw = localStorage.getItem(SETTINGS_KEY);
+  if (!raw) return { ...DEFAULT_SETTINGS };
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      restBetweenRepsSec:
+        typeof parsed.restBetweenRepsSec === "number"
+          ? parsed.restBetweenRepsSec
+          : DEFAULT_SETTINGS.restBetweenRepsSec,
+    };
+  } catch (error) {
+    console.warn("Failed to parse settings; using defaults.");
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export function saveSettings(settings) {
+  const payload = {
+    restBetweenRepsSec:
+      typeof settings.restBetweenRepsSec === "number"
+        ? settings.restBetweenRepsSec
+        : DEFAULT_SETTINGS.restBetweenRepsSec,
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
 }

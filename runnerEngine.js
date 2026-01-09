@@ -1,5 +1,8 @@
-export function createRunnerEngine(day, { onLog, onDone } = {}) {
-  const steps = buildSteps(day);
+export function createRunnerEngine(
+  day,
+  { onLog, onDone, restBetweenRepsSec } = {},
+) {
+  const steps = buildSteps(day, restBetweenRepsSec);
   let currentIndex = 0;
   let state = steps.length ? "ACTIVE" : "DONE_DAY";
   let phaseStart = Date.now();
@@ -251,7 +254,7 @@ function getTargetSec(step, lastRepActualSec) {
   return null;
 }
 
-function buildSteps(day) {
+function buildSteps(day, restBetweenRepsSec) {
   const steps = [];
   day.items.forEach((item, itemIndex) => {
     const sets = item.sets || 1;
@@ -261,13 +264,17 @@ function buildSteps(day) {
         ? (typeof repsValue === "number" ? repsValue : 1)
         : 1;
       for (let repIndex = 0; repIndex < repCount; repIndex += 1) {
+        const restOverride = item.type === "reps"
+          && typeof restBetweenRepsSec === "number"
+          ? restBetweenRepsSec
+          : null;
         steps.push({
           exerciseId: item.exerciseId,
           type: item.type,
           itemIndex,
           setIndex,
           repIndex,
-          restSec: item.restSec || 0,
+          restSec: restOverride != null ? restOverride : item.restSec || 0,
           targetSec: item.targetSec || 0,
           durationSec: item.durationSec || item.targetSec || 0,
         });
