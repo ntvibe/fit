@@ -11,6 +11,8 @@ import {
   reopenSession,
   loadPlanOrder,
   savePlanOrder,
+  loadSettings,
+  saveSettings,
 } from "./store.js";
 import { createRunnerEngine } from "./runnerEngine.js";
 import {
@@ -24,6 +26,7 @@ const app = document.getElementById("app");
 const state = {
   plan: null,
   progress: loadProgress(),
+  settings: loadSettings(),
   error: null,
   runnerSession: null,
   cleanup: null,
@@ -49,6 +52,7 @@ function startRunnerSession(day) {
   const engine = createRunnerEngine(day, {
     onLog: (entry) => addLogEntry(state.progress, sessionId, entry),
     onDone: () => completeSession(state.progress, sessionId),
+    restBetweenRepsSec: state.settings.restBetweenRepsSec,
   });
   state.runnerSession = { dayId: day.id, sessionId, engine };
 }
@@ -241,9 +245,17 @@ function render() {
       app,
       plan: state.plan,
       progress: state.progress,
+      settings: state.settings,
       onReset: () => {
         state.progress = resetProgress();
         render();
+      },
+      onUpdateSettings: (updates) => {
+        state.settings = {
+          ...state.settings,
+          ...updates,
+        };
+        saveSettings(state.settings);
       },
     });
     return;
