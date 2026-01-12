@@ -188,10 +188,10 @@ export function renderTrainingDetail({
         ${day.items
           .map((item, itemIndex) => {
             const detail = item.type === "hold"
-              ? `${item.sets} sets • ${item.durationSec}s hold`
+              ? `${item.sets} sets • ${formatHoldDuration(item)} hold`
               : item.type === "routine"
                 ? `${item.sets} set routine`
-                : `${item.sets} sets • ${formatReps(item.reps)}`;
+                : `${item.sets} sets • ${formatRepsSummary(item)}`;
             const totalForItem = stepsPerItem[itemIndex] || 0;
             const completedForItem = completedStepsByItem[itemIndex] || 0;
             const percentForItem = totalForItem
@@ -202,7 +202,7 @@ export function renderTrainingDetail({
                 <div class="list-item">
                   <div class="exercise-order">${itemIndex + 1}</div>
                   <div class="exercise-info">
-                    <h3>${formatExercise(item.exerciseId)}</h3>
+                    <h3>${getExerciseName(item)}</h3>
                     <p>${detail}</p>
                   </div>
                 </div>
@@ -489,7 +489,7 @@ export function renderRunner({
     }
 
     const step = snapshot.step;
-    const exerciseName = formatExercise(step.exerciseId);
+    const exerciseName = getExerciseName(day.items[step.itemIndex]);
     if (exerciseName !== currentExercise) {
       currentExercise = exerciseName;
       if (!player) {
@@ -521,7 +521,7 @@ export function renderRunner({
     }
     const nextItem = day.items[step.itemIndex + 1];
     if (nextItem) {
-      nextExerciseEl.textContent = formatExercise(nextItem.exerciseId);
+      nextExerciseEl.textContent = getExerciseName(nextItem);
       nextDetailEl.textContent = buildNextDetail(nextItem);
     } else {
       nextExerciseEl.textContent = "Last exercise";
@@ -630,11 +630,32 @@ export function renderRunner({
   return () => clearInterval(intervalId);
 }
 
+function getExerciseName(item) {
+  if (item?.name) return item.name;
+  if (!item?.exerciseId) return "";
+  return formatExercise(item.exerciseId);
+}
+
 function formatExercise(id) {
   return id
-    .split("-")
+    .split(/[-_]/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+function formatHoldDuration(item) {
+  if (Array.isArray(item.durationSecRange)) {
+    return `${item.durationSecRange[0]}-${item.durationSecRange[1]}s`;
+  }
+  const duration = item.durationSec || item.targetSec || 0;
+  return `${duration}s`;
+}
+
+function formatRepsSummary(item) {
+  if (Array.isArray(item.repsRange)) {
+    return `Reps ${item.repsRange[0]}-${item.repsRange[1]}`;
+  }
+  return formatReps(item.reps);
 }
 
 function formatReps(reps) {
@@ -658,7 +679,7 @@ function buildRepsStat(step, day) {
   if (step.type === "hold") {
     return {
       label: "Hold",
-      value: `${step.durationSec || item.durationSec || item.targetSec || 0}s`,
+      value: formatHoldDuration(item),
     };
   }
   if (step.type === "routine") {
@@ -667,22 +688,30 @@ function buildRepsStat(step, day) {
       value: "--",
     };
   }
+  if (Array.isArray(item.repsRange)) {
+    return { label: "Reps", value: `${item.repsRange[0]}-${item.repsRange[1]}` };
+  }
   const repsValue = Array.isArray(item.reps) ? item.reps[step.setIndex] : item.reps;
   if (repsValue === "max") {
     return { label: "Reps", value: "Max" };
   }
-  const repTotal = typeof repsValue === "number" ? repsValue : 1;
-  return { label: "Reps", value: String(repTotal) };
+  if (typeof repsValue === "number") {
+    return { label: "Reps", value: String(repsValue) };
+  }
+  if (typeof repsValue === "string") {
+    return { label: "Reps", value: repsValue };
+  }
+  return { label: "Reps", value: "1" };
 }
 
 function buildNextDetail(item) {
   if (item.type === "hold") {
-    return `${item.sets || 1} sets • ${item.durationSec}s hold`;
+    return `${item.sets || 1} sets • ${formatHoldDuration(item)} hold`;
   }
   if (item.type === "routine") {
     return `${item.sets || 1} set routine`;
   }
-  return `${item.sets || 1} sets • ${formatReps(item.reps)}`;
+  return `${item.sets || 1} sets • ${formatRepsSummary(item)}`;
 }
 
 function formatTimer(seconds) {
