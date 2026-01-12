@@ -1,279 +1,218 @@
 {
-  "id": "week1",
-  "name": "Week 1",
-  "meta": {
-    "targetSessionMin": 75,
-    "intensity": "Start conservative, leave reps in reserve",
-    "warmup": {
-      "durationMin": 10,
-      "note": "Light cardio + mobility (10–12 min)"
+  "planId": "gym-machine-strength-3day-v1",
+  "title": "Gym Strength (Mostly Machines) — 3 Days/Week",
+  "goal": ["strength", "hypertrophy", "joint-friendly"],
+  "frequencyPerWeek": 3,
+  "sessionDurationMin": 60,
+  "globalRules": {
+    "intensity": {
+      "targetRIR": 2,
+      "notes": "Finish most working sets with ~2 reps in reserve (RIR 2)."
     },
-    "restDays": {
-      "activity": "Light walking",
-      "durationMin": 40
+    "progression": {
+      "method": "double_progression",
+      "rule": "When you reach the top of the rep range for all sets with good form, increase load next session."
     },
-    "dailyExtras": {
-      "coreAndRehab": [
-        {
-          "type": "hold",
-          "exerciseId": "dead-bug",
-          "sets": 2,
-          "durationSec": 20,
-          "restSec": 20
-        },
-        {
-          "type": "routine",
-          "exerciseId": "low-back-pain-routine",
-          "sets": 1
-        }
-      ]
+    "rest": {
+      "compoundSec": [90, 180],
+      "isolationSec": [60, 120]
     }
   },
-  "days": [
+  "equipmentPreference": ["machines", "cables", "minimal-dumbbells"],
+  "workouts": [
     {
-      "id": "training-1",
-      "name": "Training 1 (Legs • Back • Arms)",
-      "items": [
+      "workoutId": "day1-lower-core",
+      "name": "Day 1 — Lower Body + Core",
+      "blocks": [
         {
-          "type": "hold",
-          "exerciseId": "squat-hold-reach",
-          "sets": 2,
-          "durationSec": 40,
-          "restSec": 40,
-          "targetSec": 40
+          "blockId": "warmup",
+          "type": "warmup",
+          "items": [
+            { "exerciseId": "bike", "name": "Stationary Bike", "type": "cardio", "durationMin": 5, "intensity": "easy" },
+            { "exerciseId": "hip_circles", "name": "Hip Circles", "type": "mobility", "sets": 1, "reps": 10, "perSide": true },
+            { "exerciseId": "bodyweight_squat", "name": "Bodyweight Squats", "type": "mobility", "sets": 1, "reps": 10 }
+          ]
         },
         {
-          "type": "reps",
-          "exerciseId": "box-squat",
-          "sets": 3,
-          "reps": [12, 12, 12],
-          "restSec": 120,
-          "targetSec": 45
+          "blockId": "main",
+          "type": "strength",
+          "items": [
+            {
+              "exerciseId": "leg_press",
+              "name": "Leg Press Machine",
+              "type": "machine",
+              "sets": 4,
+              "repsRange": [8, 10],
+              "targetRIR": 2,
+              "restSec": 120,
+              "notes": "No knee lockout. Slow controlled lowering."
+            },
+            {
+              "exerciseId": "seated_leg_curl",
+              "name": "Seated Leg Curl",
+              "type": "machine",
+              "sets": 3,
+              "repsRange": [10, 12],
+              "targetRIR": 2,
+              "restSec": 90
+            },
+            {
+              "exerciseId": "leg_extension",
+              "name": "Leg Extension",
+              "type": "machine",
+              "sets": 3,
+              "repsRange": [10, 12],
+              "targetRIR": 2,
+              "restSec": 90
+            },
+            {
+              "exerciseId": "hip_abduction",
+              "name": "Hip Abduction Machine",
+              "type": "machine",
+              "sets": 2,
+              "repsRange": [12, 15],
+              "targetRIR": 2,
+              "restSec": 75
+            },
+            {
+              "exerciseId": "hip_adduction",
+              "name": "Hip Adduction Machine",
+              "type": "machine",
+              "sets": 2,
+              "repsRange": [12, 15],
+              "targetRIR": 2,
+              "restSec": 75
+            },
+            {
+              "exerciseId": "standing_calf_raise",
+              "name": "Standing Calf Raise Machine",
+              "type": "machine",
+              "sets": 4,
+              "repsRange": [12, 15],
+              "targetRIR": 2,
+              "restSec": 75
+            }
+          ]
         },
         {
-          "type": "reps",
-          "exerciseId": "dumbbell-lunges",
-          "sets": 3,
-          "reps": [12, 10, 8],
-          "restSec": 90,
-          "targetSec": 50
-        },
-        {
-          "type": "reps",
-          "exerciseId": "lat-pulldown-machine",
-          "sets": 3,
-          "reps": [10, 10, 10],
-          "restSec": 90,
-          "targetSec": 40
-        },
-        {
-          "type": "reps",
-          "exerciseId": "barbell-biceps-curl",
-          "sets": 4,
-          "reps": [12, 12, 12, 12],
-          "restSec": 75,
-          "targetSec": 35
-        },
-        {
-          "type": "reps",
-          "exerciseId": "triceps-pushdown",
-          "sets": 4,
-          "reps": [15, 15, 15, 15],
-          "restSec": 75,
-          "targetSec": 35
-        },
-        {
-          "type": "reps",
-          "exerciseId": "cocoons",
-          "sets": 2,
-          "reps": ["max", "max"],
-          "restSec": 60,
-          "targetSec": 45
+          "blockId": "core",
+          "type": "core",
+          "items": [
+            {
+              "exerciseId": "ab_crunch_machine",
+              "name": "Ab Crunch Machine",
+              "type": "machine",
+              "sets": 3,
+              "repsRange": [12, 15],
+              "targetRIR": 2,
+              "restSec": 60
+            },
+            {
+              "exerciseId": "back_extension_machine",
+              "name": "Back Extension Machine",
+              "type": "machine",
+              "sets": 2,
+              "reps": 12,
+              "targetRIR": 2,
+              "restSec": 75,
+              "notes": "Controlled tempo. Neutral spine."
+            }
+          ]
         }
       ]
     },
     {
-      "id": "training-2",
-      "name": "Training 2 (Chest • Hamstrings • Shoulders)",
-      "items": [
+      "workoutId": "day2-upper-push",
+      "name": "Day 2 — Upper Push (Chest/Shoulders/Triceps)",
+      "blocks": [
         {
-          "type": "hold",
-          "exerciseId": "dead-bug",
-          "sets": 2,
-          "durationSec": 40,
-          "restSec": 30,
-          "targetSec": 40
+          "blockId": "warmup",
+          "type": "warmup",
+          "items": [
+            { "exerciseId": "band_pull_aparts", "name": "Band Pull-Aparts", "type": "activation", "sets": 2, "reps": 15, "restSec": 30 },
+            { "exerciseId": "shoulder_circles", "name": "Shoulder Circles", "type": "mobility", "sets": 1, "reps": 10, "perDirection": true }
+          ]
         },
         {
-          "type": "reps",
-          "exerciseId": "flat-barbell-bench-press",
-          "sets": 4,
-          "reps": [6, 6, 6, 6],
-          "restSec": 150,
-          "targetSec": 35
+          "blockId": "main",
+          "type": "strength",
+          "items": [
+            {
+              "exerciseId": "chest_press_machine",
+              "name": "Chest Press Machine",
+              "type": "machine",
+              "sets": 4,
+              "repsRange": [8, 10],
+              "targetRIR": 2,
+              "restSec": 120
+            },
+            {
+              "exerciseId": "incline_chest_press_machine",
+              "name": "Incline Chest Press Machine",
+              "type": "machine",
+              "sets": 3,
+              "reps": 10,
+              "targetRIR": 2,
+              "restSec": 120
+            },
+            {
+              "exerciseId": "pec_deck",
+              "name": "Pec Deck / Chest Fly",
+              "type": "machine",
+              "sets": 3,
+              "reps": 12,
+              "targetRIR": 2,
+              "restSec": 90
+            },
+            {
+              "exerciseId": "seated_shoulder_press_machine",
+              "name": "Seated Shoulder Press Machine",
+              "type": "machine",
+              "sets": 3,
+              "repsRange": [8, 10],
+              "targetRIR": 2,
+              "restSec": 120,
+              "notes": "Prefer neutral grip if available."
+            },
+            {
+              "exerciseId": "lateral_raise_machine",
+              "name": "Lateral Raise Machine",
+              "type": "machine",
+              "sets": 3,
+              "repsRange": [12, 15],
+              "targetRIR": 2,
+              "restSec": 75
+            }
+          ]
         },
         {
-          "type": "reps",
-          "exerciseId": "incline-dumbbell-press",
-          "sets": 4,
-          "reps": [12, 12, 12, 12],
-          "restSec": 90,
-          "targetSec": 45
-        },
-        {
-          "type": "reps",
-          "exerciseId": "romanian-deadlift",
-          "sets": 3,
-          "reps": [8, 8, 8],
-          "restSec": 120,
-          "targetSec": 45
-        },
-        {
-          "type": "reps",
-          "exerciseId": "leg-curl-machine",
-          "sets": 3,
-          "reps": [15, 15, 15],
-          "restSec": 90,
-          "targetSec": 40
-        },
-        {
-          "type": "reps",
-          "exerciseId": "arnold-press",
-          "sets": 3,
-          "reps": [12, 10, 8],
-          "restSec": 90,
-          "targetSec": 40
-        },
-        {
-          "type": "reps",
-          "exerciseId": "lateral-raises",
-          "sets": 3,
-          "reps": [20, 20, 20],
-          "restSec": 60,
-          "targetSec": 35
+          "blockId": "arms",
+          "type": "accessory",
+          "items": [
+            {
+              "exerciseId": "cable_triceps_pushdown",
+              "name": "Cable Triceps Pushdown",
+              "type": "cable",
+              "sets": 3,
+              "repsRange": [10, 12],
+              "targetRIR": 2,
+              "restSec": 75
+            }
+          ]
         }
       ]
     },
     {
-      "id": "training-3",
-      "name": "Training 3 (Back • Arms • Chest)",
-      "items": [
+      "workoutId": "day3-upper-pull",
+      "name": "Day 3 — Upper Pull (Back/Rear Delts/Biceps)",
+      "blocks": [
         {
-          "type": "hold",
-          "exerciseId": "hip-switch",
-          "sets": 2,
-          "durationSec": 40,
-          "restSec": 30,
-          "targetSec": 40
+          "blockId": "warmup",
+          "type": "warmup",
+          "items": [
+            { "exerciseId": "rower", "name": "Rowing Machine", "type": "cardio", "durationMin": 5, "intensity": "easy" }
+          ]
         },
         {
-          "type": "reps",
-          "exerciseId": "barbell-row",
-          "sets": 4,
-          "reps": [8, 8, 8, 8],
-          "restSec": 120,
-          "targetSec": 45
-        },
-        {
-          "type": "reps",
-          "exerciseId": "t-bar-row",
-          "sets": 3,
-          "reps": [12, 12, 12],
-          "restSec": 120,
-          "targetSec": 45
-        },
-        {
-          "type": "reps",
-          "exerciseId": "scott-curl-preacher",
-          "sets": 3,
-          "reps": [12, 8, 12],
-          "restSec": 75,
-          "targetSec": 35
-        },
-        {
-          "type": "reps",
-          "exerciseId": "overhead-triceps-press-forehead",
-          "sets": 4,
-          "reps": [10, 10, 10, 10],
-          "restSec": 75,
-          "targetSec": 35
-        },
-        {
-          "type": "reps",
-          "exerciseId": "push-ups",
-          "sets": 3,
-          "reps": ["max", "max", "max"],
-          "restSec": 75,
-          "targetSec": 45
-        },
-        {
-          "type": "reps",
-          "exerciseId": "captains-chair-leg-raises",
-          "sets": 2,
-          "reps": ["max", "max"],
-          "restSec": 60,
-          "targetSec": 45
-        }
-      ]
-    },
-    {
-      "id": "training-4",
-      "name": "Training 4 (Shoulders • Legs • Arms)",
-      "items": [
-        {
-          "type": "routine",
-          "exerciseId": "low-back-pain-routine",
-          "sets": 1
-        },
-        {
-          "type": "reps",
-          "exerciseId": "standing-military-press",
-          "sets": 4,
-          "reps": [10, 10, 10, 10],
-          "restSec": 120,
-          "targetSec": 40
-        },
-        {
-          "type": "reps",
-          "exerciseId": "lateral-raises",
-          "sets": 3,
-          "reps": [15, 15, 15],
-          "restSec": 60,
-          "targetSec": 35
-        },
-        {
-          "type": "reps",
-          "exerciseId": "leg-press",
-          "sets": 3,
-          "reps": [20, 15, 10],
-          "restSec": 120,
-          "targetSec": 50
-        },
-        {
-          "type": "reps",
-          "exerciseId": "dumbbell-biceps-curl",
-          "sets": 3,
-          "reps": [12, 12, 16],
-          "restSec": 75,
-          "targetSec": 35
-        },
-        {
-          "type": "reps",
-          "exerciseId": "triceps-pushdown",
-          "sets": 3,
-          "reps": [20, 20, 20],
-          "restSec": 60,
-          "targetSec": 35
-        },
-        {
-          "type": "reps",
-          "exerciseId": "russian-twists",
-          "sets": 2,
-          "reps": ["max", "max"],
-          "restSec": 60,
-          "targetSec": 45
-        }
-      ]
-    }
-  ]
-}
+          "blockId": "main",
+          "type": "strength",
