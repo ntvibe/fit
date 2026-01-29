@@ -112,7 +112,7 @@ export function renderTrainingDetail({
   progress,
   latestSession,
   onRestart,
-  onReorder,
+  onReorderSave,
   onSelectExercise,
 }) {
   const totalSteps = countSteps(day);
@@ -182,42 +182,16 @@ export function renderTrainingDetail({
           <div class="progress-fill" style="width: ${percent}%"></div>
         </div>
       </div>
-      <h3 class="section-title">Exercises</h3>
-      <p class="small" style="margin-bottom: 8px;">Tap an exercise to jump in. Press and hold to move it.</p>
-      <div class="stack">
-        ${day.items
-          .map((item, itemIndex) => {
-            const detail = item.type === "hold"
-              ? `${item.sets} sets • ${formatHoldDuration(item)} hold`
-              : item.type === "routine"
-                ? `${item.sets} set routine`
-                : `${item.sets} sets • ${formatRepsSummary(item)}`;
-            const totalForItem = stepsPerItem[itemIndex] || 0;
-            const completedForItem = completedStepsByItem[itemIndex] || 0;
-            const percentForItem = totalForItem
-              ? Math.round((completedForItem / totalForItem) * 100)
-              : 0;
-            return `
-              <div class="card exercise-card" data-action="exercise-row" data-index="${itemIndex}">
-                <div class="list-item">
-                  <div class="exercise-order">${itemIndex + 1}</div>
-                  <div class="exercise-info">
-                    <h3>${getExerciseName(item)}</h3>
-                    <p>${detail}</p>
-                  </div>
-                </div>
-                <div class="list-item" style="margin-top: 12px;">
-                  <p class="small">Progress</p>
-                  <p class="small">${completedForItem} / ${totalForItem} steps</p>
-                </div>
-                <div class="progress-bar" style="margin-top: 8px;">
-                  <div class="progress-fill" style="width: ${percentForItem}%"></div>
-                </div>
-              </div>
-            `;
-          })
-          .join("")}
+      <div class="section-header">
+        <h3 class="section-title">Exercises</h3>
+        <button class="button ghost" data-action="edit-order">Change order</button>
       </div>
+      <p class="small" data-role="exercise-hint">Tap an exercise to expand the set details.</p>
+      <div class="stack" data-role="exercise-list"></div>
+      <div class="stack is-hidden" data-role="order-list"></div>
+      <button class="icon-button floating-check is-hidden" data-action="save-order" aria-label="Save order">
+        <span aria-hidden="true">✓</span>
+      </button>
     </div>
   `;
 
@@ -228,32 +202,215 @@ export function renderTrainingDetail({
     });
   }
 
-  const rows = app.querySelectorAll("[data-action='exercise-row']");
-  let suppressClick = false;
-  if (onSelectExercise) {
-    rows.forEach((row) => {
-      row.addEventListener("click", () => {
-        if (suppressClick) {
-          suppressClick = false;
-          return;
-        }
-        const index = Number(row.dataset.index);
-        if (Number.isNaN(index)) return;
-        onSelectExercise(index);
-      });
-    });
-  }
+  const exerciseList = app.querySelector("[data-role='exercise-list']");
+  const orderList = app.querySelector("[data-role='order-list']");
+  const editOrderButton = app.querySelector("[data-action='edit-order']");
+  const saveOrderButton = app.querySelector("[data-action='save-order']");
+  const hint = app.querySelector("[data-role='exercise-hint']");
+  let isReorderMode = false;
+  let draftOrder = [...day.items];
 
-  if (onReorder) {
+  const renderSummaryChips = (item, itemIndex) => {
+    const summary = buildExerciseSummary(item);
+    return `
+      <span class="summary-chip" data-summary="sets" data-index="${itemIndex}">${summary.sets}</span>
+      <span class="summary-chip" data-summary="reps" data-index="${itemIndex}">${summary.reps}</span>
+      <span class="summary-chip" data-summary="metric" data-index="${itemIndex}">${summary.metric}</span>
+    `;
+  };
+
+  const renderSetList = (item, itemIndex) => {
+    const sets = ensureSetDetails(item);
+    const metric = getMetricMeta(item);
+    return `
+      <ul class="set-list" data-role="set-list" data-index="${itemIndex}">
+        ${sets
+          .map((set, setIndex) => {
+            const repsValue = set.reps ?? "";
+            const metricValue = set[metric.key] ?? "";
+            return `
+              <li class="set-row">
+                <span class="set-label">Set ${setIndex + 1}</span>
+                ${
+                  metric.showReps
+                    ? `
+                      <label class="set-field">
+                        <span>Reps</span>
+                        <div class="set-input">
+                          <input
+                            type="number"
+                            inputmode="numeric"
+                            min="0"
+                            data-action="edit-reps"
+                            data-index="${itemIndex}"
+                            data-set="${setIndex}"
+                            value="${repsValue}"
+                          />
+                        </div>
+                      </label>
+                    `
+                    : ""
+                }
+                <label class="set-field">
+                  <span>${metric.label}</span>
+                  <div class="set-input">
+                    <input
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      data-action="edit-metric"
+                      data-metric="${metric.key}"
+                      data-index="${itemIndex}"
+                      data-set="${setIndex}"
+                      value="${metricValue}"
+                    />
+                    <span class="unit">${metric.unit}</span>
+                  </div>
+                </label>
+                <button class="icon-button ghost small" data-action="delete-set" data-index="${itemIndex}" data-set="${setIndex}" aria-label="Delete set">
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </li>
+            `;
+          })
+          .join("")}
+      </ul>
+      <button class="button ghost add-set" data-action="add-set" data-index="${itemIndex}">
+        + Add set
+      </button>
+      ${
+        onSelectExercise
+          ? `<button class="button primary start-exercise" data-action="start-exercise" data-index="${itemIndex}">
+              Start exercise
+            </button>`
+          : ""
+      }
+    `;
+  };
+
+  const renderExerciseCards = (items) => {
+    if (!exerciseList) return;
+    exerciseList.innerHTML = items
+      .map((item, itemIndex) => {
+        const totalForItem = stepsPerItem[itemIndex] || 0;
+        const completedForItem = completedStepsByItem[itemIndex] || 0;
+        const percentForItem = totalForItem
+          ? Math.round((completedForItem / totalForItem) * 100)
+          : 0;
+        return `
+          <details class="card exercise-toggle" data-index="${itemIndex}">
+            <summary class="exercise-summary">
+              <div class="exercise-summary-main">
+                <div class="exercise-order">${itemIndex + 1}</div>
+                <div class="exercise-info">
+                  <h3>${getExerciseName(item)}</h3>
+                  <div class="summary-chips">
+                    ${renderSummaryChips(item, itemIndex)}
+                  </div>
+                </div>
+              </div>
+              <span class="toggle-icon" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="exercise-body">
+              <div class="list-item">
+                <p class="small">Progress</p>
+                <p class="small">${completedForItem} / ${totalForItem} steps</p>
+              </div>
+              <div class="progress-bar" style="margin-top: 8px;">
+                <div class="progress-fill" style="width: ${percentForItem}%"></div>
+              </div>
+              <div class="sets-panel" data-role="sets-panel" data-index="${itemIndex}">
+                ${renderSetList(item, itemIndex)}
+              </div>
+            </div>
+          </details>
+        `;
+      })
+      .join("");
+  };
+
+  const renderOrderList = () => {
+    if (!orderList) return;
+    orderList.innerHTML = draftOrder
+      .map((item, itemIndex) => {
+        return `
+          <div class="card exercise-card order-card" data-action="order-row" data-index="${itemIndex}">
+            <div class="list-item">
+              <div class="exercise-order">${itemIndex + 1}</div>
+              <div class="exercise-info">
+                <h3>${getExerciseName(item)}</h3>
+                <div class="summary-chips">
+                  ${renderSummaryChips(item, itemIndex)}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+    bindOrderDragAndDrop();
+  };
+
+  const setReorderMode = (isActive) => {
+    isReorderMode = isActive;
+    if (exerciseList) {
+      exerciseList.classList.toggle("is-hidden", isActive);
+    }
+    if (orderList) {
+      orderList.classList.toggle("is-hidden", !isActive);
+    }
+    if (saveOrderButton) {
+      saveOrderButton.classList.toggle("is-hidden", !isActive);
+    }
+    if (editOrderButton) {
+      editOrderButton.textContent = isActive ? "Cancel" : "Change order";
+    }
+    if (hint) {
+      hint.textContent = isActive
+        ? "Drag exercises to reorder them, then tap the checkmark to save."
+        : "Tap an exercise to expand the set details.";
+    }
+    if (isActive) {
+      draftOrder = [...day.items];
+      renderOrderList();
+    }
+  };
+
+  const updateSummary = (itemIndex) => {
+    const item = day.items[itemIndex];
+    if (!item) return;
+    const summary = buildExerciseSummary(item);
+    const setsLabel = exerciseList?.querySelector(`[data-summary="sets"][data-index="${itemIndex}"]`);
+    const repsLabel = exerciseList?.querySelector(`[data-summary="reps"][data-index="${itemIndex}"]`);
+    const metricLabel = exerciseList?.querySelector(`[data-summary="metric"][data-index="${itemIndex}"]`);
+    if (setsLabel) setsLabel.textContent = summary.sets;
+    if (repsLabel) repsLabel.textContent = summary.reps;
+    if (metricLabel) metricLabel.textContent = summary.metric;
+  };
+
+  const rerenderSetList = (itemIndex) => {
+    const panel = app.querySelector(`[data-role="sets-panel"][data-index="${itemIndex}"]`);
+    const item = day.items[itemIndex];
+    if (!panel || !item) return;
+    panel.innerHTML = renderSetList(item, itemIndex);
+    updateSummary(itemIndex);
+  };
+
+  const getInsertIndex = (fromIndex, toIndex, position) => {
+    const offset = position === "after" ? 1 : 0;
+    let insertIndex = toIndex + offset;
+    if (fromIndex < insertIndex) {
+      insertIndex -= 1;
+    }
+    return insertIndex;
+  };
+
+  const bindOrderDragAndDrop = () => {
+    const rows = orderList?.querySelectorAll("[data-action='order-row']") || [];
     let dragIndex = null;
     let touchDragIndex = null;
     let touchTarget = null;
     let longPressTimer = null;
-    const releaseSuppressClick = () => {
-      window.setTimeout(() => {
-        suppressClick = false;
-      }, 0);
-    };
     const clearTouchDragState = () => {
       if (longPressTimer) {
         clearTimeout(longPressTimer);
@@ -268,14 +425,12 @@ export function renderTrainingDetail({
       rows.forEach((row) => {
         row.classList.remove("dragging");
       });
-      releaseSuppressClick();
     };
     rows.forEach((row) => {
       row.setAttribute("draggable", "true");
       row.addEventListener("dragstart", (event) => {
         dragIndex = Number(row.dataset.index);
         row.classList.add("dragging");
-        suppressClick = true;
         if (event.dataTransfer) {
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("text/plain", String(dragIndex));
@@ -284,7 +439,6 @@ export function renderTrainingDetail({
       row.addEventListener("dragend", () => {
         row.classList.remove("dragging");
         dragIndex = null;
-        releaseSuppressClick();
       });
       row.addEventListener("dragover", (event) => {
         event.preventDefault();
@@ -308,7 +462,14 @@ export function renderTrainingDetail({
         if (Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex === toIndex) {
           return;
         }
-        onReorder(fromIndex, toIndex, position);
+        const insertIndex = getInsertIndex(fromIndex, toIndex, position);
+        const updated = [...draftOrder];
+        const [moved] = updated.splice(fromIndex, 1);
+        if (!moved) return;
+        const clampedIndex = Math.max(0, Math.min(updated.length, insertIndex));
+        updated.splice(clampedIndex, 0, moved);
+        draftOrder = updated;
+        renderOrderList();
       });
 
       row.addEventListener("touchstart", (event) => {
@@ -316,7 +477,6 @@ export function renderTrainingDetail({
         longPressTimer = window.setTimeout(() => {
           touchDragIndex = Number(row.dataset.index);
           row.classList.add("dragging");
-          suppressClick = true;
         }, 250);
       }, { passive: true });
 
@@ -325,7 +485,7 @@ export function renderTrainingDetail({
         event.preventDefault();
         const touch = event.touches[0];
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        const rowTarget = target?.closest("[data-action='exercise-row']");
+        const rowTarget = target?.closest("[data-action='order-row']");
         if (!rowTarget) return;
         if (touchTarget && touchTarget !== rowTarget) {
           touchTarget.classList.remove("drag-over");
@@ -349,7 +509,7 @@ export function renderTrainingDetail({
         event.preventDefault();
         const touch = event.changedTouches[0];
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        const rowTarget = target?.closest("[data-action='exercise-row']");
+        const rowTarget = target?.closest("[data-action='order-row']");
         const toIndex = Number(rowTarget?.dataset.index);
         const fromIndex = touchDragIndex;
         const position = rowTarget?.dataset.dropPosition || "before";
@@ -357,14 +517,114 @@ export function renderTrainingDetail({
         if (Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex === toIndex) {
           return;
         }
-        onReorder(fromIndex, toIndex, position);
+        const insertIndex = getInsertIndex(fromIndex, toIndex, position);
+        const updated = [...draftOrder];
+        const [moved] = updated.splice(fromIndex, 1);
+        if (!moved) return;
+        const clampedIndex = Math.max(0, Math.min(updated.length, insertIndex));
+        updated.splice(clampedIndex, 0, moved);
+        draftOrder = updated;
+        renderOrderList();
       }, { passive: false });
 
       row.addEventListener("touchcancel", () => {
         clearTouchDragState();
       });
     });
+  };
+
+  renderExerciseCards(day.items);
+
+  if (editOrderButton) {
+    editOrderButton.addEventListener("click", () => {
+      setReorderMode(!isReorderMode);
+    });
   }
+
+  if (saveOrderButton && onReorderSave) {
+    saveOrderButton.addEventListener("click", () => {
+      const newOrder = draftOrder.map((item) => item.exerciseId);
+      onReorderSave(newOrder);
+    });
+  }
+
+  if (onSelectExercise) {
+    app.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-action='start-exercise']");
+      if (!target) return;
+      const index = Number(target.dataset.index);
+      if (Number.isNaN(index)) return;
+      onSelectExercise(index);
+    });
+  }
+
+  app.addEventListener("click", (event) => {
+    const deleteButton = event.target.closest("[data-action='delete-set']");
+    const addButton = event.target.closest("[data-action='add-set']");
+    if (deleteButton) {
+      const itemIndex = Number(deleteButton.dataset.index);
+      const setIndex = Number(deleteButton.dataset.set);
+      const item = day.items[itemIndex];
+      if (!item || Number.isNaN(setIndex)) return;
+      const sets = ensureSetDetails(item);
+      if (sets.length <= 1) return;
+      sets.splice(setIndex, 1);
+      item.sets = sets.length;
+      rerenderSetList(itemIndex);
+      return;
+    }
+    if (addButton) {
+      const itemIndex = Number(addButton.dataset.index);
+      const item = day.items[itemIndex];
+      if (!item) return;
+      const sets = ensureSetDetails(item);
+      const metric = getMetricMeta(item);
+      const lastSet = sets[sets.length - 1] || {};
+      const newSet = {
+        reps: metric.showReps ? lastSet.reps ?? item.reps ?? 0 : null,
+        durationSec: metric.key === "durationSec" ? lastSet.durationSec ?? item.durationSec ?? 0 : null,
+        distanceMeters: metric.key === "distanceMeters" ? lastSet.distanceMeters ?? 0 : null,
+        weightKg: metric.key === "weightKg" ? lastSet.weightKg ?? null : null,
+      };
+      sets.push(newSet);
+      item.sets = sets.length;
+      rerenderSetList(itemIndex);
+    }
+  });
+
+  app.addEventListener("input", (event) => {
+    const repsInput = event.target.closest("[data-action='edit-reps']");
+    const metricInput = event.target.closest("[data-action='edit-metric']");
+    if (repsInput) {
+      const itemIndex = Number(repsInput.dataset.index);
+      const setIndex = Number(repsInput.dataset.set);
+      const item = day.items[itemIndex];
+      if (!item) return;
+      const value = Number(repsInput.value);
+      const sets = ensureSetDetails(item);
+      if (!sets[setIndex]) return;
+      sets[setIndex].reps = Number.isNaN(value) ? null : value;
+      const fallback = typeof item.reps === "number" ? item.reps : 0;
+      item.reps = sets.map((set) => set.reps ?? fallback);
+      updateSummary(itemIndex);
+      return;
+    }
+    if (metricInput) {
+      const itemIndex = Number(metricInput.dataset.index);
+      const setIndex = Number(metricInput.dataset.set);
+      const metricKey = metricInput.dataset.metric;
+      const item = day.items[itemIndex];
+      if (!item) return;
+      const value = Number(metricInput.value);
+      const sets = ensureSetDetails(item);
+      if (!sets[setIndex]) return;
+      sets[setIndex][metricKey] = Number.isNaN(value) ? null : value;
+      if (metricKey === "durationSec") {
+        item.durationSec = sets[setIndex].durationSec ?? item.durationSec;
+      }
+      updateSummary(itemIndex);
+    }
+  });
 }
 
 export function renderHistory({ app, progress }) {
@@ -666,6 +926,82 @@ function formatReps(reps) {
   return reps
     .map((rep) => (rep === "max" ? "Reps max" : `Reps ${rep}`))
     .join(" • ");
+}
+
+function getMetricMeta(item) {
+  if (item?.type === "hold") {
+    return {
+      key: "durationSec",
+      label: "Duration",
+      unit: "sec",
+      showReps: false,
+    };
+  }
+  if (item?.type === "distance" || item?.distanceMeters != null) {
+    return {
+      key: "distanceMeters",
+      label: "Distance",
+      unit: "m",
+      showReps: false,
+    };
+  }
+  return {
+    key: "weightKg",
+    label: "Weight",
+    unit: "kg",
+    showReps: true,
+  };
+}
+
+function ensureSetDetails(item) {
+  const targetSets = item?.sets || 1;
+  const existing = Array.isArray(item?.setDetails) ? item.setDetails : [];
+  const metric = getMetricMeta(item);
+  const normalized = [];
+  for (let index = 0; index < targetSets; index += 1) {
+    const existingSet = existing[index] || {};
+    const repsFromItem = Array.isArray(item?.reps) ? item.reps[index] : item?.reps;
+    const durationFromItem = Array.isArray(item?.durationSec)
+      ? item.durationSec[index]
+      : item?.durationSec;
+    const distanceFromItem = Array.isArray(item?.distanceMeters)
+      ? item.distanceMeters[index]
+      : item?.distanceMeters;
+    normalized.push({
+      reps: existingSet.reps ?? (metric.showReps ? repsFromItem ?? item?.repsRange?.[1] ?? null : null),
+      durationSec: existingSet.durationSec ?? (metric.key === "durationSec" ? durationFromItem ?? item?.durationSecRange?.[1] ?? null : null),
+      distanceMeters: existingSet.distanceMeters ?? (metric.key === "distanceMeters" ? distanceFromItem ?? item?.distanceRange?.[1] ?? null : null),
+      weightKg: existingSet.weightKg ?? (metric.key === "weightKg" ? item?.weightKg ?? item?.weightRange?.[1] ?? null : null),
+    });
+  }
+  item.setDetails = normalized;
+  item.sets = normalized.length;
+  return normalized;
+}
+
+function formatRange(values, unit) {
+  if (!values.length) {
+    return unit ? `— ${unit}` : "—";
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = min === max ? `${min}` : `${min}-${max}`;
+  return unit ? `${range} ${unit}` : range;
+}
+
+function buildExerciseSummary(item) {
+  const sets = ensureSetDetails(item);
+  const repsValues = sets.map((set) => set.reps).filter((value) => typeof value === "number");
+  const metric = getMetricMeta(item);
+  const metricValues = sets
+    .map((set) => set[metric.key])
+    .filter((value) => typeof value === "number");
+  const setCount = sets.length;
+  return {
+    sets: `${setCount} ${setCount === 1 ? "Set" : "Sets"}`,
+    reps: `${formatRange(repsValues)} Reps`,
+    metric: formatRange(metricValues, metric.unit),
+  };
 }
 
 function buildSetLabel(step, day) {
