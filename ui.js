@@ -12,11 +12,7 @@ export function renderHome({ app, plan, progress, settings, onReset, onUpdateSet
       </div>
       <div class="header-actions">
         <button class="icon-button ghost" data-action="open-settings" aria-label="Open settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path
-              d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.65l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.65 8.83a.5.5 0 0 0 .12.65l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.65l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.25.1.54.01.68-.22l1.92-3.32a.5.5 0 0 0-.12-.65l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z"
-            />
-          </svg>
+          <span class="material-icons" aria-hidden="true">settings</span>
         </button>
         <a class="button ghost link" href="#/history">History</a>
       </div>
@@ -48,7 +44,7 @@ export function renderHome({ app, plan, progress, settings, onReset, onUpdateSet
         <div class="modal-header">
           <h2 id="settings-title">Settings</h2>
           <button class="icon-button ghost" data-action="close-settings" aria-label="Close settings">
-            <span aria-hidden="true">✕</span>
+            <span class="material-icons" aria-hidden="true">close</span>
           </button>
         </div>
         <div class="modal-body">
@@ -190,7 +186,7 @@ export function renderTrainingDetail({
       <div class="stack" data-role="exercise-list"></div>
       <div class="stack is-hidden" data-role="order-list"></div>
       <button class="icon-button floating-check is-hidden" data-action="save-order" aria-label="Save order">
-        <span aria-hidden="true">✓</span>
+        <span class="material-icons" aria-hidden="true">check</span>
       </button>
     </div>
   `;
@@ -224,6 +220,12 @@ export function renderTrainingDetail({
     const metric = getMetricMeta(item);
     return `
       <ul class="set-list" data-role="set-list" data-index="${itemIndex}">
+        <li class="set-row set-header">
+          <span>Sets</span>
+          <span>${metric.showReps ? "Reps" : ""}</span>
+          <span>${metric.label}</span>
+          <span aria-hidden="true">✕</span>
+        </li>
         ${sets
           .map((set, setIndex) => {
             const repsValue = set.reps ?? "";
@@ -234,30 +236,30 @@ export function renderTrainingDetail({
                 ${
                   metric.showReps
                     ? `
-                      <label class="set-field">
-                        <span>Reps</span>
+                      <div class="set-field">
                         <div class="set-input">
                           <input
                             type="number"
                             inputmode="numeric"
                             min="0"
+                            aria-label="Reps"
                             data-action="edit-reps"
                             data-index="${itemIndex}"
                             data-set="${setIndex}"
                             value="${repsValue}"
                           />
                         </div>
-                      </label>
+                      </div>
                     `
-                    : ""
+                    : `<span class="set-empty" aria-hidden="true"></span>`
                 }
-                <label class="set-field">
-                  <span>${metric.label}</span>
+                <div class="set-field">
                   <div class="set-input">
                     <input
                       type="number"
                       inputmode="numeric"
                       min="0"
+                      aria-label="${metric.label}"
                       data-action="edit-metric"
                       data-metric="${metric.key}"
                       data-index="${itemIndex}"
@@ -266,9 +268,9 @@ export function renderTrainingDetail({
                     />
                     <span class="unit">${metric.unit}</span>
                   </div>
-                </label>
+                </div>
                 <button class="icon-button ghost small" data-action="delete-set" data-index="${itemIndex}" data-set="${setIndex}" aria-label="Delete set">
-                  <span aria-hidden="true">✕</span>
+                  <span class="material-icons" aria-hidden="true">close</span>
                 </button>
               </li>
             `;
@@ -309,7 +311,7 @@ export function renderTrainingDetail({
                   </div>
                 </div>
               </div>
-              <span class="toggle-icon" aria-hidden="true">⌄</span>
+              <span class="toggle-icon material-icons" aria-hidden="true">expand_more</span>
             </summary>
             <div class="exercise-body">
               <div class="list-item">
